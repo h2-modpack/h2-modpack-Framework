@@ -5,6 +5,7 @@ globals = {
     "rom",
     "public",
     "Framework",
+    "FrameworkPackRegistry",
     "lib",
     "_PLUGIN",
     "ScreenData",

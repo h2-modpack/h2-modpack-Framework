@@ -52,7 +52,7 @@ local function createHashGroupBuilder()
         local groups = {}
         local groupedAliases = {}
 
-        for groupIndex, groupHint in ipairs(hashHints or {}) do
+        for _, groupHint in ipairs(hashHints or {}) do
             local keyPrefix = groupHint.keyPrefix
             local groupNumber = 1
             local offset = 0

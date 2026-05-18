@@ -3,7 +3,7 @@ local lu = require('luaunit')
 TestMain = {}
 
 function TestMain:setUp()
-    local overlayState = AdamantModpackLib_Internal.overlays
+    local overlayState = LibOverlays
     self.previousUiSuppressors = overlayState.uiSuppressors
     self.previousNextUiSuppressorId = overlayState.nextUiSuppressorId
     overlayState.uiSuppressors = {}
@@ -11,7 +11,7 @@ function TestMain:setUp()
 end
 
 function TestMain:tearDown()
-    local overlayState = AdamantModpackLib_Internal.overlays
+    local overlayState = LibOverlays
     overlayState.uiSuppressors = self.previousUiSuppressors
     overlayState.nextUiSuppressorId = self.previousNextUiSuppressorId
 end
@@ -30,7 +30,7 @@ end
 function TestMain:testCreateHudRegistersFrameworkHashOverlay()
     local previousScreenData = ScreenData
     local previousDefineSystem = lib.overlays.defineSystem
-    local previousDispatchCommit = AdamantModpackLib_Internal.overlays.dispatchCommit
+    local previousDispatchCommit = LibOverlays.dispatchCommit
     local registeredOwner = nil
     local registeredLine = nil
     local projectedValue = nil
@@ -65,7 +65,7 @@ function TestMain:testCreateHudRegistersFrameworkHashOverlay()
         }, {})
         return true
     end
-    AdamantModpackLib_Internal.overlays.dispatchCommit = function()
+    LibOverlays.dispatchCommit = function()
         registeredOpts._commit({
             setLine = function(_, value)
                 projectedValue = value
@@ -92,7 +92,7 @@ function TestMain:testCreateHudRegistersFrameworkHashOverlay()
 
     ScreenData = previousScreenData
     lib.overlays.defineSystem = previousDefineSystem
-    AdamantModpackLib_Internal.overlays.dispatchCommit = previousDispatchCommit
+    LibOverlays.dispatchCommit = previousDispatchCommit
 
     lu.assertEquals(registeredOwner, "adamant-framework.test-pack.hud")
     lu.assertEquals(registeredLine, "hash")
@@ -267,7 +267,7 @@ function TestMain:testModuleActivationOwnsStartupSyncBeforeFrameworkInit()
         setupRunDataCalls = setupRunDataCalls + 1
     end
 
-    local definition = AdamantModpackLib_Internal.moduleHost.prepareDefinition({}, {
+    local definition = LibModuleHost.prepareDefinition({}, {
         modpack = packId,
         id = "Alpha",
         name = "Alpha",
@@ -277,7 +277,7 @@ function TestMain:testModuleActivationOwnsStartupSyncBeforeFrameworkInit()
         Enabled = true,
         DebugMode = false,
     }, definition)
-    local host, authorHost = AdamantModpackLib_Internal.moduleHost.create({
+    local host, authorHost = LibModuleHost.create({
         pluginGuid = "test-pack.Alpha",
         definition = definition,
         store = store,
@@ -1163,7 +1163,7 @@ function TestMain:testQuickSetupUsesLatestLiveHostForQuickContent()
     local okFirst, errFirst = pcall(builtUi.renderWindow)
 
     local entry = moduleRegistry.modules[1]
-    local replacementDefinition = AdamantModpackLib_Internal.moduleHost.prepareDefinition({}, {
+    local replacementDefinition = LibModuleHost.prepareDefinition({}, {
         id = entry.id,
         name = entry.name,
         modpack = entry.modpack,
@@ -1176,7 +1176,7 @@ function TestMain:testQuickSetupUsesLatestLiveHostForQuickContent()
         DebugMode = false,
         FlagA = false,
     }, replacementDefinition)
-    local replacementHost, replacementAuthorHost = AdamantModpackLib_Internal.moduleHost.create({
+    local replacementHost, replacementAuthorHost = LibModuleHost.create({
         pluginGuid = entry.pluginGuid,
         definition = replacementDefinition,
         store = store,

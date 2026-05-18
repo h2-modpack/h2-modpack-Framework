@@ -16,7 +16,7 @@ end
 local function attachModule(pluginGuid, definition, persisted, exports)
     exports = exports or {}
     local patchPlan = definition.patchPlan
-    definition = AdamantModpackLib_Internal.moduleHost.prepareDefinition({}, {
+    definition = LibModuleHost.prepareDefinition({}, {
         modpack = definition.modpack,
         id = definition.id,
         name = definition.name,
@@ -26,7 +26,7 @@ local function attachModule(pluginGuid, definition, persisted, exports)
         hashGroupPlan = definition.hashGroupPlan,
     })
     local store, session = CreateModuleState(persisted or {}, definition)
-    local host, authorHost = AdamantModpackLib_Internal.moduleHost.create({
+    local host, authorHost = LibModuleHost.create({
         pluginGuid = pluginGuid,
         definition = definition,
         store = store,
@@ -124,14 +124,14 @@ function TestModuleRegistry:testHostSnapshotUsesLiveHostAndWarnsWhenHostIsMissin
     }
 
     exports.host = replacement
-    AdamantModpackLib_Internal.liveModuleHosts["test-GodPool"] = replacement
+    SetRuntimeLiveHost("test-GodPool", replacement)
 
     local liveSnapshot = moduleRegistry.live.captureSnapshot()
     lu.assertEquals(moduleRegistry.snapshot.getHost(entry, liveSnapshot), replacement)
     lu.assertTrue(moduleRegistry.snapshot.isEntryEnabled(entry, liveSnapshot))
 
     exports.host = nil
-    AdamantModpackLib_Internal.liveModuleHosts["test-GodPool"] = nil
+    SetRuntimeLiveHost("test-GodPool", nil)
 
     local missingSnapshot = moduleRegistry.live.captureSnapshot()
     lu.assertNil(moduleRegistry.snapshot.getHost(entry, missingSnapshot))
@@ -185,7 +185,7 @@ function TestModuleRegistry:testCapturedSnapshotIsStableAcrossHostReplacement()
         drawTab = function() end,
     }
     exports.host = replacement
-    AdamantModpackLib_Internal.liveModuleHosts["test-GodPool"] = replacement
+    SetRuntimeLiveHost("test-GodPool", replacement)
 
     lu.assertEquals(moduleRegistry.snapshot.getHost(entry, capturedSnapshot), originalHost)
     lu.assertEquals(moduleRegistry.live.getHost(entry), replacement)
@@ -210,7 +210,7 @@ function TestModuleRegistry:testHostSnapshotWarnsOnceWhenHostStaysMissing()
     local moduleRegistry = FrameworkTestApi.createModuleRegistry("test-pack", { DebugMode = false })
     moduleRegistry.refresh()
     exports.host = nil
-    AdamantModpackLib_Internal.liveModuleHosts["test-GodPool"] = nil
+    SetRuntimeLiveHost("test-GodPool", nil)
 
     moduleRegistry.live.captureSnapshot()
     moduleRegistry.live.captureSnapshot()

@@ -104,9 +104,24 @@ ImGuiTreeNodeFlags = {
     CollapsingHeader = 26,
 }
 
+LibTestImports = {}
+LibTestImportOverrides = {}
+
 import = function(path, fenv, ...)
+    local override = LibTestImportOverrides[path]
+    if override ~= nil then
+        if type(override) == "function" then
+            return override(path, fenv, ...)
+        end
+        return override
+    end
+
     local chunk = assert(loadfile("../adamant-ModpackLib/src/" .. path, "t", fenv or _ENV))
-    return chunk(...)
+    local result = chunk(...)
+    if result ~= nil then
+        LibTestImports[path] = result
+    end
+    return result
 end
 
 Warnings = {}
@@ -130,8 +145,54 @@ dofile("../adamant-ModpackLib/src/main.lua")
 lib = public
 rom.mods['adamant-ModpackLib'] = lib
 
+function GetRuntimeLiveHosts()
+    local runtime = assert(AdamantModpackLib_Runtime, "Lib runtime missing")
+    local moduleHost = assert(runtime.moduleHost, "module host runtime missing")
+    return assert(moduleHost.liveHosts, "runtime live hosts missing")
+end
+
+function SetRuntimeLiveHost(pluginGuid, host)
+    local liveHosts = GetRuntimeLiveHosts()
+    local previousHost = liveHosts[pluginGuid]
+    liveHosts[pluginGuid] = host
+    return previousHost
+end
+
+LibStorage = setmetatable({}, {
+    __index = function(_, key)
+        return assert(LibTestImports["core/storage/storage.lua"], "LibStorage test service missing")[key]
+    end,
+    __newindex = function(_, key, value)
+        assert(LibTestImports["core/storage/storage.lua"], "LibStorage test service missing")[key] = value
+    end,
+})
+LibModuleState = setmetatable({}, {
+    __index = function(_, key)
+        return assert(LibTestImports["core/module_state/module_state.lua"], "LibModuleState test service missing")[key]
+    end,
+    __newindex = function(_, key, value)
+        assert(LibTestImports["core/module_state/module_state.lua"], "LibModuleState test service missing")[key] = value
+    end,
+})
+LibModuleHost = setmetatable({}, {
+    __index = function(_, key)
+        return assert(LibTestImports["core/module_bootstrap/host.lua"], "LibModuleHost test service missing")[key]
+    end,
+    __newindex = function(_, key, value)
+        assert(LibTestImports["core/module_bootstrap/host.lua"], "LibModuleHost test service missing")[key] = value
+    end,
+})
+LibOverlays = setmetatable({}, {
+    __index = function(_, key)
+        return assert(LibTestImports["core/overlays/overlays.lua"], "LibOverlays test service missing")[key]
+    end,
+    __newindex = function(_, key, value)
+        assert(LibTestImports["core/overlays/overlays.lua"], "LibOverlays test service missing")[key] = value
+    end,
+})
+
 function CreateModuleState(config, definition)
-    local state = AdamantModpackLib_Internal.moduleState.create(config, definition)
+    local state = LibModuleState.create(config, definition)
     return state.store, state.session
 end
 
@@ -231,7 +292,7 @@ config = { ModEnabled = true, DebugMode = false }
 MockModuleRegistry = {}
 
 local function prepareDefinition(definition)
-    return AdamantModpackLib_Internal.moduleHost.prepareDefinition({}, definition)
+    return LibModuleHost.prepareDefinition({}, definition)
 end
 
 local function makePersistedConfig(storage, overrides)
@@ -288,7 +349,7 @@ function MockModuleRegistry.create(moduleDefs)
         })
         local store, session = CreateModuleState(persisted, definition)
         local pluginGuid = def.pluginGuid or ("adamant-" .. def.id)
-        local host, authorHost = AdamantModpackLib_Internal.moduleHost.create({
+        local host, authorHost = LibModuleHost.create({
             pluginGuid = pluginGuid,
             definition = definition,
             store = store,

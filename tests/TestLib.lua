@@ -4,7 +4,7 @@ TestLibHost = {}
 
 function TestLibHost:testCommitSessionFlushesManagedAliasState()
     local config = { Flag = false, Enabled = false, DebugMode = false }
-    local definition = AdamantModpackLib_Internal.moduleHost.prepareDefinition({}, {
+    local definition = LibModuleHost.prepareDefinition({}, {
         id = "ManagedState",
         name = "Managed State",
         storage = {
@@ -12,7 +12,7 @@ function TestLibHost:testCommitSessionFlushesManagedAliasState()
         },
     })
     local store, session = CreateModuleState(config, definition)
-    local host, authorHost = AdamantModpackLib_Internal.moduleHost.create({
+    local host, authorHost = LibModuleHost.create({
         pluginGuid = "test-managed-state",
         definition = definition,
         store = store,
@@ -34,7 +34,7 @@ TestLibValidation = {}
 
 function TestLibValidation:testDuplicateStorageAliasesFail()
     lu.assertErrorMsgContains("duplicate alias 'Flag'", function()
-        AdamantModpackLib_Internal.storage.validate({
+        LibStorage.validate({
             { type = "bool", alias = "Flag", default = false },
             { type = "bool", alias = "Flag", default = false },
         }, "DuplicateStorage")
