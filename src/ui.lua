@@ -126,6 +126,7 @@ local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
     local selectedTab = "Quick Setup"
     local _showModWindow = false
     local uiSuppressionToken = nil
+    local disposed = false
 
     for _, entry in ipairs(moduleRegistry.modules) do
         moduleByTabLabel[entry._tabLabel] = entry
@@ -228,17 +229,36 @@ local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
     end
 
     local function handleHostGuiClosed()
+        if disposed then
+            return
+        end
         flushPending()
         releaseOverlaySuppression()
     end
 
     local function closeWindow()
+        if disposed then
+            return
+        end
+        flushPending()
+        _showModWindow = false
+        releaseOverlaySuppression()
+    end
+
+    local function dispose()
+        if disposed then
+            return
+        end
+        disposed = true
         flushPending()
         _showModWindow = false
         releaseOverlaySuppression()
     end
 
     local function renderWindow()
+        if disposed then
+            return
+        end
         if not _showModWindow then
             return
         end
@@ -274,6 +294,9 @@ local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
     end
 
     local function addMenuBar()
+        if disposed then
+            return
+        end
         if ui.MenuItem("Show Mod Menu") then
             if _showModWindow then
                 closeWindow()
@@ -289,6 +312,7 @@ local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
         addMenuBar = addMenuBar,
         flushPending = flushPending,
         handleHostGuiClosed = handleHostGuiClosed,
+        dispose = dispose,
     }
 end
 

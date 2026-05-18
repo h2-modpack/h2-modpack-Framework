@@ -47,7 +47,14 @@ local Framework = {}
 ---@field moduleRegistry table Opaque framework module registry runtime.
 ---@field configHash table Opaque framework config-hash runtime.
 ---@field hud table Opaque framework HUD runtime.
----@field ui table Opaque framework UI runtime.
+---@field ui AdamantModpackFramework.UIRuntime Opaque framework UI runtime.
+
+---@class AdamantModpackFramework.UIRuntime
+---@field renderWindow fun()
+---@field addMenuBar fun()
+---@field flushPending fun()
+---@field handleHostGuiClosed fun()
+---@field dispose fun()
 
 ---@class AdamantModpackFramework.GuiCallbacks
 ---@field render fun() Main Framework window renderer for `rom.gui.add_imgui(...)`.

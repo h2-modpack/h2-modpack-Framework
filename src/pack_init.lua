@@ -46,6 +46,19 @@ local bootConstructors = {
     createTheme = createTheme,
 }
 
+local function disposePack(pack)
+    local packUi = pack and pack.ui
+    if not packUi then
+        return
+    end
+
+    if packUi.dispose ~= nil then
+        packUi.dispose()
+    elseif packUi.handleHostGuiClosed ~= nil then
+        packUi.handleHostGuiClosed()
+    end
+end
+
 local function ValidateInitArgs(packId, windowTitle, config, numProfiles, defaultProfiles, opts)
     assert(type(packId) == "string" and packId ~= "",
         "Framework.init: packId must be a non-empty string")
@@ -113,6 +126,9 @@ local function init(packId, windowTitle, config, numProfiles, defaultProfiles, o
         ui = ui,
         _index = packIndex,
     }
+
+    disposePack(existingPack)
+
     if not existingPack then
         table.insert(FrameworkPackRegistry.packList, packId)
     end

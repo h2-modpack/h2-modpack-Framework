@@ -448,6 +448,137 @@ function TestMain:testRepeatedInitReplacesPackStateAndKeepsStablePackIndex()
     lu.assertEquals(packIdCount, 1)
 end
 
+function TestMain:testRepeatedInitDisposesPreviousOpenUiSuppression()
+    local packId = "reinit-dispose-pack"
+    local packRegistry = FrameworkPackRegistry
+    local previousPack = packRegistry.packs[packId]
+    local previousPackList = {}
+    for i, value in ipairs(packRegistry.packList) do
+        previousPackList[i] = value
+    end
+
+    local previousSuppressForUi = lib.overlays.suppressForUi
+    local previousImGui = rom.ImGui
+    local suppressCalls = 0
+    local releaseCalls = 0
+    local flushCalls = 0
+
+    lib.coordinator.register(packId, {
+        ModEnabled = true,
+    })
+    lib.overlays.suppressForUi = function()
+        suppressCalls = suppressCalls + 1
+        local released = false
+        return {
+            release = function()
+                if released then
+                    return
+                end
+                released = true
+                releaseCalls = releaseCalls + 1
+            end,
+        }
+    end
+    rom.ImGui = {
+        MenuItem = function()
+            return true
+        end,
+    }
+
+    local harness = CreateFrameworkHarness({
+        constructors = {
+            createModuleRegistry = function()
+                return {
+                    modules = {},
+                    modulesById = {},
+                    tabOrder = {},
+                    modulesWithQuickContent = {},
+                    refresh = function() end,
+                    live = {
+                        captureSnapshot = function()
+                            return { hosts = {} }
+                        end,
+                    },
+                    snapshot = {
+                        getHost = function()
+                            return nil
+                        end,
+                        isEntryEnabled = function()
+                            return false
+                        end,
+                        isDebugEnabled = function()
+                            return false
+                        end,
+                    },
+                }
+            end,
+            createConfigHash = function()
+                return {}
+            end,
+            createTheme = function()
+                return {
+                    colors = {
+                        textDisabled = {},
+                        warning = {},
+                        success = {},
+                        info = {},
+                    },
+                    PushTheme = function() end,
+                    PopTheme = function() end,
+                }
+            end,
+            createHud = function()
+                return {
+                    setModMarker = function() end,
+                    setMarkerVisible = function() end,
+                    flushPendingHash = function()
+                        flushCalls = flushCalls + 1
+                    end,
+                    getConfigHash = function()
+                        return "", ""
+                    end,
+                    applyConfigHash = function()
+                        return true
+                    end,
+                    markHashDirty = function() end,
+                }
+            end,
+        },
+    })
+    local config = {
+        ModEnabled = true,
+        DebugMode = false,
+        Profiles = {
+            { Name = "", Hash = "", Tooltip = "" },
+        },
+    }
+    local firstPack = harness.init(packId, "Reinit Dispose Pack", config, 1, {})
+    firstPack.ui.addMenuBar()
+    local secondPack = harness.init(packId, "Reinit Dispose Pack", config, 1, {})
+    local releaseCallsAfterReinit = releaseCalls
+    local flushCallsAfterReinit = flushCalls
+    firstPack.ui.addMenuBar()
+    local suppressCallsAfterDisposedProbe = suppressCalls
+    local releaseCallsAfterDisposedProbe = releaseCalls
+    local flushCallsAfterDisposedProbe = flushCalls
+
+    local activePack = packRegistry.packs[packId]
+
+    lib.overlays.suppressForUi = previousSuppressForUi
+    rom.ImGui = previousImGui
+    packRegistry.packs[packId] = previousPack
+    packRegistry.packList = previousPackList
+    lib.coordinator.register(packId, nil)
+
+    lu.assertTrue(firstPack ~= secondPack)
+    lu.assertEquals(activePack, secondPack)
+    lu.assertEquals(suppressCallsAfterDisposedProbe, 1)
+    lu.assertEquals(releaseCallsAfterReinit, 1)
+    lu.assertEquals(releaseCallsAfterDisposedProbe, 1)
+    lu.assertEquals(flushCallsAfterReinit, 1)
+    lu.assertEquals(flushCallsAfterDisposedProbe, 1)
+end
+
 function TestMain:testFailedInitDoesNotRegisterPack()
     local packId = "failed-init-pack"
     local packRegistry = FrameworkPackRegistry
