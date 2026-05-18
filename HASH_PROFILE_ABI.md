@@ -184,6 +184,9 @@ Framework provides these decode guarantees:
 - hash format version check on decode
 - unknown keys are ignored
 - missing keys fall back to defaults
+- invalid module enable tokens fail the import and roll back
+- malformed scalar/table storage tokens fail the import and roll back
+- malformed or empty packed hash-group tokens fail the import and roll back
 - saved coordinator profiles are audited at `Framework.init(...)` and warn on unknown field keys inside known module namespaces
 
 Module authors own compatibility plans for:

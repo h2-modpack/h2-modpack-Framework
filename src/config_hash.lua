@@ -177,6 +177,9 @@ local function createConfigHash(moduleRegistry, config, packId)
     end
 
     function ConfigHash.DecodeBase62(str)
+        if type(str) ~= "string" or str == "" then
+            return nil
+        end
         local n = 0
         for i = 1, #str do
             local c = string.sub(str, i, i)
@@ -219,14 +222,36 @@ local function createConfigHash(moduleRegistry, config, packId)
     end
 
     local function DecodeValue(root, str, entryLabel)
+        if lib.hashing.isHashTokenValid(root, str) == false then
+            return nil, string.format(
+                "invalid %s '%s' hash value '%s'",
+                entryLabel,
+                tostring(root.alias),
+                tostring(str)
+            )
+        end
+
         local decoded = lib.hashing.fromHash(root, str)
         if decoded == nil then
             logging.warn(packId,
                 "ApplyConfigHash: defaulting %s '%s' with unknown storage type '%s'",
                 entryLabel, tostring(root.alias), tostring(root.type))
-            return root.default
+            return root.default, nil
         end
-        return decoded
+        return decoded, nil
+    end
+
+    local function DecodeModuleEnabled(entry, stored)
+        if stored == nil then
+            return false, nil
+        end
+        if stored == "1" then
+            return true, nil
+        end
+        if stored == "0" then
+            return false, nil
+        end
+        return nil, FormatEntryError(entry, "decode enabled", "invalid module enable value '" .. tostring(stored) .. "'")
     end
 
     function ConfigHash.GetConfigHash()
@@ -301,7 +326,11 @@ local function createConfigHash(moduleRegistry, config, packId)
         local moduleTargets = {}
         for _, entry in ipairs(moduleRegistry.modules) do
             local stored = kv[entry.id]
-            moduleTargets[entry] = stored == "1"
+            local enabledTarget, enabledErr = DecodeModuleEnabled(entry, stored)
+            if enabledErr ~= nil then
+                return FailApplyHash(snapshot, captured, enabledErr)
+            end
+            moduleTargets[entry] = enabledTarget == true
         end
 
         local okWrite, writeSucceeded, writeErr = xpcall(function()
@@ -310,7 +339,14 @@ local function createConfigHash(moduleRegistry, config, packId)
                 for _, group in ipairs(meta.groups) do
                     local stored = kv[entry.id .. "." .. group.key]
                     if stored ~= nil then
-                        local packedValue = ConfigHash.DecodeBase62(stored) or group.packedDefault
+                        local packedValue = ConfigHash.DecodeBase62(stored)
+                        if packedValue == nil then
+                            return false, FormatEntryError(
+                                entry,
+                                "decode " .. tostring(group.key),
+                                "invalid packed hash value '" .. tostring(stored) .. "'"
+                            )
+                        end
                         for _, member in ipairs(group.members) do
                             local encoded = lib.hashing.readPackedBits(packedValue, member.offset, member.width)
                             local ok, err = StagePersistedChecked(entry, member.alias,
@@ -333,8 +369,12 @@ local function createConfigHash(moduleRegistry, config, packId)
                     if not meta.groupedAliases[root.alias] then
                         local stored = kv[entry.id .. "." .. root.alias]
                         if stored ~= nil then
+                            local decoded, decodeErr = DecodeValue(root, stored, "storage root")
+                            if decodeErr ~= nil then
+                                return false, FormatEntryError(entry, "decode " .. tostring(root.alias), decodeErr)
+                            end
                             local ok, err = StagePersistedChecked(entry, root.alias,
-                                DecodeValue(root, stored, "storage root"), snapshot)
+                                decoded, snapshot)
                             if ok == false then
                                 return false, err
                             end
