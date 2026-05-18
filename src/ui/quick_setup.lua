@@ -1,5 +1,7 @@
 local ctx = ...
 
+local lib = ctx.lib
+local rom = ctx.rom
 local ui = rom.ImGui
 local renderQuickSetup = ctx.renderQuickSetup
 local profiles = ctx.profiles

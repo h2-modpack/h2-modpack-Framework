@@ -1,4 +1,6 @@
 local deps = ...
+local lib = deps.lib
+local rom = deps.rom
 local logging = deps.logging
 
 local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle, numProfiles,
@@ -57,6 +59,7 @@ local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
     end
 
     local runtime = import("ui/runtime.lua", nil, {
+        rom = rom,
         moduleRegistry = moduleRegistry,
         hud = hud,
         config = config,
@@ -74,6 +77,8 @@ local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
     })
 
     profiles = import("ui/profiles.lua", nil, {
+        lib = lib,
+        rom = rom,
         config = config,
         colors = colors,
         numProfiles = numProfiles,
@@ -85,6 +90,8 @@ local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
     })
 
     local drawQuickSetup = import("ui/quick_setup.lua", nil, {
+        lib = lib,
+        rom = rom,
         renderQuickSetup = renderQuickSetup,
         theme = theme,
         profiles = profiles,
@@ -95,12 +102,15 @@ local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
     })
 
     local drawModuleTab = import("ui/module_tabs.lua", nil, {
+        rom = rom,
         staging = staging,
         runtime = runtime,
         snapshotAccess = snapshotAccess,
     })
 
     local drawDev = import("ui/dev.lua", nil, {
+        lib = lib,
+        rom = rom,
         config = config,
         colors = colors,
         moduleRegistry = moduleRegistry,

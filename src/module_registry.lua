@@ -2,6 +2,8 @@
 -- so UI/runtime work can tolerate hot-replaced hosts safely.
 
 local deps = ...
+local lib = deps.lib
+local rom = deps.rom
 local logging = deps.logging
 
 local function createModuleRegistry(packId, config)

@@ -1,3 +1,6 @@
+local deps = ...
+local lib = deps.lib
+
 --- Create the HUD subsystem for one coordinator pack.
 --- @param packId string Pack identifier used for component naming.
 --- @param packIndex number Stable vertical stacking index for this pack.
@@ -7,8 +10,6 @@
 --- @param hideHashMarker boolean|nil Optional pack-level flag to suppress the HUD fingerprint marker.
 --- @return table hud HUD object exposing marker/hash update helpers.
 local function createHud(packId, packIndex, configHash, theme, config, hideHashMarker)
-    assert(ScreenData and ScreenData.HUD and ScreenData.HUD.ComponentData,
-        "Framework.init: game HUD globals are not ready; call Framework.init after game load")
     assert(lib and lib.overlays and type(lib.overlays.defineSystem) == "function",
         "Framework.init: adamant-ModpackLib overlays are not available")
 

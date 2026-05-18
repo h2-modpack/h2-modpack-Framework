@@ -1,3 +1,6 @@
+local deps = ...
+local lib = deps.lib
+
 local function createHashGroupBuilder()
     local HashGroupBuilder = {}
 

@@ -1,4 +1,6 @@
 local deps = ...
+local lib = deps.lib
+local rom = deps.rom
 local hashCodec = deps.hashCodec
 local createHashGroupBuilder = deps.createHashGroupBuilder
 local logging = deps.logging

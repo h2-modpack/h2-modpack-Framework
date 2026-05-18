@@ -54,12 +54,6 @@ rom = {
     },
 }
 
-ScreenData = {
-    HUD = {
-        ComponentData = {},
-    },
-}
-
 rom.mods['SGG_Modding-ENVY'] = {
     auto = function() return {} end,
 }
@@ -200,7 +194,6 @@ import = function(path, fenv, ...)
     local chunk = assert(loadfile("src/" .. path, "t", fenv or _ENV))
     return chunk(...)
 end
-import_as_fallback = function() end
 
 dofile("src/main.lua")
 FrameworkPackRegistry = FrameworkPackRegistry or {}
@@ -214,58 +207,91 @@ FrameworkTestApi = setmetatable({}, {
     end,
 })
 
-local function GetBootConstructors()
-    local index = 1
-    while true do
-        local name, value = debug.getupvalue(public.init, index)
-        if not name then
-            break
+local function makeFrameworkImportEnv(importOverrides)
+    local env = {}
+
+    local function importWithOverrides(path, fenv, ...)
+        local override = importOverrides and importOverrides[path] or nil
+        if override ~= nil then
+            return override
         end
-        if name == "bootConstructors" then
-            return value
-        end
-        index = index + 1
+
+        local chunk = assert(loadfile("src/" .. path, "t", fenv or env))
+        return chunk(...)
     end
-    error("public.init missing bootConstructors upvalue")
+
+    env.import = importWithOverrides
+    return setmetatable(env, {
+        __index = _ENV,
+    })
 end
 
-rawset(FrameworkTestApi, "withBootConstructors", function(overrides, body)
-    local bootConstructors = GetBootConstructors()
-    local previousConstructors = {}
-    local keys = {}
-    for key in pairs(overrides) do
-        table.insert(keys, key)
-        previousConstructors[key] = bootConstructors[key]
-        bootConstructors[key] = overrides[key]
+local function mapConstructorOverrides(constructors)
+    constructors = constructors or {}
+    local importOverrides = {}
+    local constructorPaths = {
+        createModuleRegistry = "module_registry.lua",
+        createConfigHash = "config_hash.lua",
+        createHud = "hud.lua",
+        createUI = "ui.lua",
+        createTheme = "ui/theme.lua",
+    }
+
+    for name, path in pairs(constructorPaths) do
+        if constructors[name] ~= nil then
+            importOverrides[path] = constructors[name]
+        end
     end
 
-    local ok, result = pcall(body)
+    return importOverrides
+end
 
-    for _, key in ipairs(keys) do
-        bootConstructors[key] = previousConstructors[key]
-    end
+function CreateFrameworkHarness(opts)
+    opts = opts or {}
+    local harnessLib = opts.lib or lib
+    local harnessRom = opts.rom or rom
+    local env = makeFrameworkImportEnv(mapConstructorOverrides(opts.constructors))
+    local packInit = assert(loadfile("src/pack_init.lua", "t", env))({
+        lib = harnessLib,
+        rom = harnessRom,
+    })
 
-    if not ok then
-        error(result)
-    end
-    return result
-end)
+    return {
+        lib = harnessLib,
+        rom = harnessRom,
+        packRegistry = FrameworkPackRegistry,
+        init = packInit.init,
+        tryInit = packInit.tryInit,
+        createGuiCallbacks = packInit.createGuiCallbacks,
+    }
+end
 local logging = import("logging.lua")
 local createHashGroupBuilder = import("hash_group_builder.lua", nil, {
-    logging = logging,
+    lib = lib,
 })
 local createModuleRegistry = import("module_registry.lua", nil, {
+    lib = lib,
+    rom = rom,
     logging = logging,
 })
-local createTheme = import("ui/theme.lua")
+local createTheme = import("ui/theme.lua", nil, {
+    lib = lib,
+    rom = rom,
+})
 local hashCodec = import("hash_codec.lua")
 local createConfigHash = import("config_hash.lua", nil, {
+    lib = lib,
+    rom = rom,
     hashCodec = hashCodec,
     createHashGroupBuilder = createHashGroupBuilder,
     logging = logging,
 })
-local createHud = import("hud.lua")
+local createHud = import("hud.lua", nil, {
+    lib = lib,
+})
 local createUI = import("ui.lua", nil, {
+    lib = lib,
+    rom = rom,
     logging = logging,
 })
 
@@ -277,9 +303,16 @@ rawset(FrameworkTestApi, "createHud", createHud)
 rawset(FrameworkTestApi, "createUI", createUI)
 rawset(FrameworkTestApi, "logging", logging)
 rawset(FrameworkTestApi, "createUIRuntime", function(ctx)
-    return import("ui/runtime.lua", nil, ctx)
+    local runtimeCtx = {}
+    for key, value in pairs(ctx) do
+        runtimeCtx[key] = value
+    end
+    runtimeCtx.lib = runtimeCtx.lib or lib
+    runtimeCtx.rom = runtimeCtx.rom or rom
+    return import("ui/runtime.lua", nil, runtimeCtx)
 end)
 local profileTools = import("profiles.lua", nil, {
+    lib = lib,
     hashCodec = hashCodec,
     createHashGroupBuilder = createHashGroupBuilder,
     logging = logging,

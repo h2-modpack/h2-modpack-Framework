@@ -4,6 +4,8 @@ local FIELD_NARROW = 0.3
 local FIELD_WIDE = 0.85
 
 local function createUIProfiles()
+    local lib = ctx.lib
+    local rom = ctx.rom
     local ui = rom.ImGui
     local config = ctx.config
     local colors = ctx.colors

@@ -1,3 +1,7 @@
+local deps = ...
+local lib = deps.lib
+local rom = deps.rom
+
 --- Create the shared theme styling used by the Framework UI and HUD.
 --- @return table theme Theme object exposing colors, ImGui flags, and push/pop helpers.
 local function createTheme()

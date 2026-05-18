@@ -1,5 +1,6 @@
 local ctx = ...
 
+local rom = ctx.rom
 local ui = rom.ImGui
 local staging = ctx.staging
 local runtime = ctx.runtime

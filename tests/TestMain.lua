@@ -28,7 +28,6 @@ function TestMain:testCreateGuiCallbacksAreSafeBeforeInit()
 end
 
 function TestMain:testCreateHudRegistersFrameworkHashOverlay()
-    local previousScreenData = ScreenData
     local previousDefineSystem = lib.overlays.defineSystem
     local previousDispatchCommit = LibOverlays.dispatchCommit
     local registeredOwner = nil
@@ -36,12 +35,6 @@ function TestMain:testCreateHudRegistersFrameworkHashOverlay()
     local projectedValue = nil
     local registeredOpts = nil
     local refreshCalls = 0
-
-    ScreenData = {
-        HUD = {
-            ComponentData = {},
-        },
-    }
 
     lib.overlays.defineSystem = function(owner, register)
         registeredOwner = owner
@@ -90,7 +83,6 @@ function TestMain:testCreateHudRegistersFrameworkHashOverlay()
     local hud = FrameworkTestApi.createHud("test-pack", 1, hash, theme, config, false)
     hud.setModMarker(false)
 
-    ScreenData = previousScreenData
     lib.overlays.defineSystem = previousDefineSystem
     LibOverlays.dispatchCommit = previousDispatchCommit
 
@@ -197,7 +189,8 @@ function TestMain:testInitLeavesStartupMutationSyncToHostActivation()
     end
     lib.coordinator.register("startup-pack", { ModEnabled = true })
 
-    FrameworkTestApi.withBootConstructors({
+    local harness = CreateFrameworkHarness({
+        constructors = {
         createModuleRegistry = function()
             return {
                 modules = { entry },
@@ -232,21 +225,21 @@ function TestMain:testInitLeavesStartupMutationSyncToHostActivation()
                 addMenuBar = function() end,
             }
         end,
-    }, function()
-        FrameworkTestApi.init(
-            "startup-pack",
-            "Startup Pack",
-            {
-                ModEnabled = true,
-                DebugMode = false,
-                Profiles = {
-                    { Name = "", Hash = "", Tooltip = "" },
-                },
+        },
+    })
+    harness.init(
+        "startup-pack",
+        "Startup Pack",
+        {
+            ModEnabled = true,
+            DebugMode = false,
+            Profiles = {
+                { Name = "", Hash = "", Tooltip = "" },
             },
-            1,
-            {}
-        )
-    end)
+        },
+        1,
+        {}
+    )
 
     lib.coordinator.register("startup-pack", nil)
     rom.game.SetupRunData = previousSetupRunData
@@ -306,7 +299,8 @@ function TestMain:testModuleActivationOwnsStartupSyncBeforeFrameworkInit()
         definition = definition,
     }
 
-    FrameworkTestApi.withBootConstructors({
+    local harness = CreateFrameworkHarness({
+        constructors = {
         createModuleRegistry = function()
             return {
                 modules = { entry },
@@ -341,21 +335,21 @@ function TestMain:testModuleActivationOwnsStartupSyncBeforeFrameworkInit()
                 addMenuBar = function() end,
             }
         end,
-    }, function()
-        FrameworkTestApi.init(
-            packId,
-            "Load Order Pack",
-            {
-                ModEnabled = true,
-                DebugMode = false,
-                Profiles = {
-                    { Name = "", Hash = "", Tooltip = "" },
-                },
+        },
+    })
+    harness.init(
+        packId,
+        "Load Order Pack",
+        {
+            ModEnabled = true,
+            DebugMode = false,
+            Profiles = {
+                { Name = "", Hash = "", Tooltip = "" },
             },
-            1,
-            {}
-        )
-    end)
+        },
+        1,
+        {}
+    )
 
     local ok, err = host.revertMutation()
     lib.coordinator.register(packId, nil)
@@ -384,7 +378,8 @@ function TestMain:testRepeatedInitReplacesPackStateAndKeepsStablePackIndex()
         ModEnabled = true,
     })
 
-    FrameworkTestApi.withBootConstructors({
+    local harness = CreateFrameworkHarness({
+        constructors = {
         createModuleRegistry = function()
             return {
                 modules = {},
@@ -421,17 +416,17 @@ function TestMain:testRepeatedInitReplacesPackStateAndKeepsStablePackIndex()
                 flushPending = function() end,
             }
         end,
-    }, function()
-        local config = {
-            ModEnabled = true,
-            DebugMode = false,
-            Profiles = {
-                { Name = "", Hash = "", Tooltip = "" },
-            },
-        }
-        firstPack = FrameworkTestApi.init(packId, "Reinit Pack", config, 1, {})
-        secondPack = FrameworkTestApi.init(packId, "Reinit Pack", config, 1, {})
-    end)
+        },
+    })
+    local config = {
+        ModEnabled = true,
+        DebugMode = false,
+        Profiles = {
+            { Name = "", Hash = "", Tooltip = "" },
+        },
+    }
+    firstPack = harness.init(packId, "Reinit Pack", config, 1, {})
+    secondPack = harness.init(packId, "Reinit Pack", config, 1, {})
 
     local packIdCount = 0
     for _, value in ipairs(packRegistry.packList) do
@@ -466,7 +461,8 @@ function TestMain:testFailedInitDoesNotRegisterPack()
         ModEnabled = true,
     })
 
-    FrameworkTestApi.withBootConstructors({
+    local harness = CreateFrameworkHarness({
+        constructors = {
         createModuleRegistry = function()
             return {
                 modules = {},
@@ -498,17 +494,17 @@ function TestMain:testFailedInitDoesNotRegisterPack()
         createUI = function()
             error("ui construction boom")
         end,
-    }, function()
-        local config = {
-            ModEnabled = true,
-            DebugMode = false,
-            Profiles = {
-                { Name = "", Hash = "", Tooltip = "" },
-            },
-        }
-        lu.assertErrorMsgContains("ui construction boom", function()
-            FrameworkTestApi.init(packId, "Failed Init Pack", config, 1, {})
-        end)
+        },
+    })
+    local config = {
+        ModEnabled = true,
+        DebugMode = false,
+        Profiles = {
+            { Name = "", Hash = "", Tooltip = "" },
+        },
+    }
+    lu.assertErrorMsgContains("ui construction boom", function()
+        harness.init(packId, "Failed Init Pack", config, 1, {})
     end)
 
     local packIdCount = 0
@@ -540,7 +536,8 @@ function TestMain:testTryInitReturnsPackOnSuccess()
     })
 
     local ok, pack, err
-    FrameworkTestApi.withBootConstructors({
+    local harness = CreateFrameworkHarness({
+        constructors = {
         createModuleRegistry = function()
             return {
                 modules = {},
@@ -575,15 +572,15 @@ function TestMain:testTryInitReturnsPackOnSuccess()
                 addMenuBar = function() end,
             }
         end,
-    }, function()
-        ok, pack, err = FrameworkTestApi.tryInit(packId, "Try Init Pack", {
-            ModEnabled = true,
-            DebugMode = false,
-            Profiles = {
-                { Name = "", Hash = "", Tooltip = "" },
-            },
-        }, 1, {})
-    end)
+        },
+    })
+    ok, pack, err = harness.tryInit(packId, "Try Init Pack", {
+        ModEnabled = true,
+        DebugMode = false,
+        Profiles = {
+            { Name = "", Hash = "", Tooltip = "" },
+        },
+    }, 1, {})
 
     packRegistry.packs[packId] = previousPack
     packRegistry.packList = previousPackList
@@ -610,7 +607,8 @@ function TestMain:testTryInitReturnsErrorAndDoesNotRegisterPack()
     })
 
     local ok, pack, err
-    FrameworkTestApi.withBootConstructors({
+    local harness = CreateFrameworkHarness({
+        constructors = {
         createModuleRegistry = function()
             return {
                 modules = {},
@@ -642,15 +640,15 @@ function TestMain:testTryInitReturnsErrorAndDoesNotRegisterPack()
         createUI = function()
             error("try init boom")
         end,
-    }, function()
-        ok, pack, err = FrameworkTestApi.tryInit(packId, "Try Init Pack", {
-            ModEnabled = true,
-            DebugMode = false,
-            Profiles = {
-                { Name = "", Hash = "", Tooltip = "" },
-            },
-        }, 1, {})
-    end)
+        },
+    })
+    ok, pack, err = harness.tryInit(packId, "Try Init Pack", {
+        ModEnabled = true,
+        DebugMode = false,
+        Profiles = {
+            { Name = "", Hash = "", Tooltip = "" },
+        },
+    }, 1, {})
 
     local warnings = Warnings
 
@@ -680,9 +678,9 @@ function TestMain:testMasterToggleRollsBackTouchedRuntimeStateOnFailure()
     CaptureWarnings()
 
     lib.coordinator.register("test-pack", { ModEnabled = false })
-    local previousSetupRunData = SetupRunData
+    local previousSetupRunData = rom.game.SetupRunData
     local setupRunDataCalls = 0
-    SetupRunData = function()
+    rom.game.SetupRunData = function()
         setupRunDataCalls = setupRunDataCalls + 1
     end
 
@@ -713,7 +711,6 @@ function TestMain:testMasterToggleRollsBackTouchedRuntimeStateOnFailure()
         Separator = noop,
         SameLine = noop,
         Spacing = noop,
-        TextColored = noop,
         GetWindowWidth = function() return 1000 end,
         BeginChild = function() return true end,
         EndChild = noop,
@@ -819,7 +816,7 @@ function TestMain:testMasterToggleRollsBackTouchedRuntimeStateOnFailure()
     local warnings = Warnings
 
     rom.ImGui = previousImGui
-    SetupRunData = previousSetupRunData
+    rom.game.SetupRunData = previousSetupRunData
     lib.coordinator.register("test-pack", nil)
     RestoreWarnings()
 
@@ -876,6 +873,7 @@ function TestMain:testModuleBatchToggleRollsBackTouchedModulesOnFailure()
     })
 
     local markHashDirtyCalls = 0
+    local function noop() end
     local hud = {
         markHashDirty = function()
             markHashDirtyCalls = markHashDirtyCalls + 1
@@ -963,7 +961,6 @@ function TestMain:testQuickSetupRendersModuleQuickContent()
         Separator = noop,
         SameLine = noop,
         Spacing = noop,
-        TextColored = noop,
         GetWindowWidth = function() return 1000 end,
         BeginChild = function() return true end,
         EndChild = noop,

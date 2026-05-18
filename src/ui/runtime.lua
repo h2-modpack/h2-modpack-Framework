@@ -2,6 +2,7 @@ local ctx = ...
 
 local function createUIRuntime()
     local moduleRegistry = ctx.moduleRegistry
+    local rom = ctx.rom
     local hud = ctx.hud
     local config = ctx.config
     local packId = ctx.packId

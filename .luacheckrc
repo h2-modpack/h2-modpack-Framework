@@ -8,14 +8,49 @@ globals = {
     "FrameworkPackRegistry",
     "lib",
     "_PLUGIN",
-    "ScreenData",
     "AdamantModpackFramework_Internal"
 }
 
 read_globals = {
     "import",
-    "import_as_fallback",
-    "SetupRunData",
-    "HUDScreen",
-    "ModifyTextBox",
+}
+
+files["tests/*.lua"] = {
+    globals = {
+        "CaptureWarnings",
+        "CreateFrameworkHarness",
+        "CreateModuleState",
+        "FrameworkTestApi",
+        "GetRuntimeLiveHosts",
+        "ImGuiCol",
+        "ImGuiComboFlags",
+        "ImGuiTreeNodeFlags",
+        "LibModuleHost",
+        "LibModuleState",
+        "LibOverlays",
+        "LibStorage",
+        "LibTestImportOverrides",
+        "LibTestImports",
+        "MockModuleRegistry",
+        "RestoreWarnings",
+        "SetRuntimeLiveHost",
+        "TestAuditProfiles",
+        "TestConfigHashBase62",
+        "TestConfigHashStorage",
+        "TestLibHost",
+        "TestLibValidation",
+        "TestMain",
+        "TestModuleRegistry",
+        "Warnings",
+        "_originalPrint",
+        "config",
+        "import",
+        "print",
+    },
+    read_globals = {
+        "AdamantModpackLib_Runtime",
+    },
+    ignore = {
+        "212/self",
+    },
 }

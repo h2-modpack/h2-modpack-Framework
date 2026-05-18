@@ -1,5 +1,7 @@
 local ctx = ...
 
+local lib = ctx.lib
+local rom = ctx.rom
 local ui = rom.ImGui
 local config = ctx.config
 local colors = ctx.colors

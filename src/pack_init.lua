@@ -1,24 +1,40 @@
+local deps = ...
+local lib = deps.lib
+local rom = deps.rom
+
 local logging = import "logging.lua"
 local hashCodec = import "hash_codec.lua"
-local createTheme = import "ui/theme.lua"
+local createTheme = import("ui/theme.lua", nil, {
+    lib = lib,
+    rom = rom,
+})
 local createModuleRegistry = import("module_registry.lua", nil, {
+    lib = lib,
+    rom = rom,
     logging = logging,
 })
 local createHashGroupBuilder = import("hash_group_builder.lua", nil, {
-    logging = logging,
+    lib = lib,
 })
 local profileTools = import("profiles.lua", nil, {
+    lib = lib,
     hashCodec = hashCodec,
     createHashGroupBuilder = createHashGroupBuilder,
     logging = logging,
 })
 local createConfigHash = import("config_hash.lua", nil, {
+    lib = lib,
+    rom = rom,
     hashCodec = hashCodec,
     createHashGroupBuilder = createHashGroupBuilder,
     logging = logging,
 })
-local createHud = import "hud.lua"
+local createHud = import("hud.lua", nil, {
+    lib = lib,
+})
 local createUI = import("ui.lua", nil, {
+    lib = lib,
+    rom = rom,
     logging = logging,
 })
 
@@ -63,8 +79,6 @@ local function ValidateRuntimePrerequisites()
         "Framework.init: rom.ImGui is not ready; call Framework.init after game load")
     assert(rom.game and type(rom.game.SetupRunData) == "function",
         "Framework.init: rom.game.SetupRunData is not ready; call Framework.init after game load")
-    assert(ScreenData and ScreenData.HUD and ScreenData.HUD.ComponentData,
-        "Framework.init: game HUD globals are not ready; call Framework.init after game load")
     assert(lib and lib.overlays and type(lib.overlays.defineSystem) == "function",
         "Framework.init: adamant-ModpackLib overlays are not available")
 end
@@ -74,7 +88,6 @@ local function init(packId, windowTitle, config, numProfiles, defaultProfiles, o
     assert(lib.coordinator.isRegistered(packId),
         "Framework.init: coordinator must register before init; see Core/main.lua")
 
-    import_as_fallback(rom.game)
     ValidateRuntimePrerequisites()
 
     local existingPack = FrameworkPackRegistry.packs[packId]
