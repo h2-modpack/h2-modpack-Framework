@@ -27,12 +27,10 @@ local ui = import("mods/ui.lua").bind(data)
 local host = lib.tryCreateModule({
     pluginGuid = PLUGIN_GUID,
     config = config,
-    definition = {
-        modpack = PACK_ID,
-        id = MODULE_ID,
-        name = "Example Module",
-        storage = data.buildStorage(),
-    },
+    modpack = PACK_ID,
+    id = MODULE_ID,
+    name = "Example Module",
+    storage = data.buildStorage(),
     registerHooks = logic.registerHooks,
     drawTab = ui.drawTab,
     drawQuickContent = ui.drawQuickContent,
@@ -79,9 +77,9 @@ Discovered modules render through:
 - optional `host.drawQuickContent(imgui)`
 
 The module-authored callbacks registered with Lib receive
-`drawTab(imgui, session, host)` and
-`drawQuickContent(imgui, session, host)`. Framework calls the full host methods;
-Lib supplies the author session and author host.
+`drawTab(ctx)` and `drawQuickContent(ctx)`. Framework calls the full host
+methods; Lib supplies the draw context with `imgui`, author `session`, author
+`host`, and bound `widgets`.
 
 Sidebar behavior:
 

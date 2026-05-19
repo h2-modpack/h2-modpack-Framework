@@ -60,12 +60,10 @@ local ui = import("mods/ui.lua").bind(data)
 local host = lib.tryCreateModule({
     pluginGuid = PLUGIN_GUID,
     config = config,
-    definition = {
-        modpack = PACK_ID,
-        id = MODULE_ID,
-        name = "Example Module",
-        storage = data.buildStorage(),
-    },
+    modpack = PACK_ID,
+    id = MODULE_ID,
+    name = "Example Module",
+    storage = data.buildStorage(),
     registerHooks = logic.registerHooks,
     drawTab = ui.drawTab,
     drawQuickContent = ui.drawQuickContent,
@@ -84,7 +82,8 @@ Framework behavior:
 - only enabled modules render their quick content
 - Framework snapshots live module hosts at the start of the UI operation
 - module quick content is called through that snapshot host's `drawQuickContent(imgui)`
-- the draw callback receives the restricted author `session` and author `host`
+- the draw callback receives a `ctx` with `imgui`, restricted author `session`,
+  author `host`, and bound `widgets`
 - if the module dirty-stages persisted state during quick content, Framework commits it after draw
 
 ## What Belongs In Quick Setup

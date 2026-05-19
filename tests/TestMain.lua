@@ -1138,8 +1138,8 @@ function TestMain:testQuickSetupRendersModuleQuickContent()
                 { type = "bool", alias = "FlagA", default = false },
             },
             DrawTab = function() end,
-            DrawQuickContent = function(ui)
-                ui.Checkbox("Quick B", false)
+            DrawQuickContent = function(ctx)
+                ctx.imgui.Checkbox("Quick B", false)
             end,
         },
     })

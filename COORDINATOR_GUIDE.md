@@ -111,8 +111,9 @@ Each discovered coordinated module must expose:
 `host.drawQuickContent(...)` is optional.
 
 These are full Lib host methods. The module-authored callbacks registered with
-Lib receive the author surfaces as `drawTab(imgui, session, host)` and
-`drawQuickContent(imgui, session, host)`.
+Lib receive the author surfaces as `drawTab(ctx)` and
+`drawQuickContent(ctx)`. The context contains `imgui`, author `session`,
+author `host`, and bound `widgets`.
 
 Lib owns module definition preparation and lifecycle validation before the host is published.
 Framework trusts Lib-created hosts. Activation-time mutation sync is owned by
