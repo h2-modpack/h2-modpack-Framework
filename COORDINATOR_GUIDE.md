@@ -27,7 +27,7 @@ local config = chalk.auto("config.lua")
 local loader = reload.auto_single()
 local defaultProfiles = {}
 
-local function renderQuickSetup(ctx)
+local function drawPackQuickContent(ctx)
     -- Optional coordinator quick controls.
 end
 
@@ -37,7 +37,7 @@ local function init()
         moduleOrder = {
             "ExampleModule",
         },
-        renderQuickSetup = renderQuickSetup,
+        drawPackQuickContent = drawPackQuickContent,
     })
     if not ok then
         return
@@ -83,7 +83,7 @@ Required:
 Optional `opts` fields:
 - `moduleOrder`
   Ordered list of module ids to pin first in the sidebar. Unknown entries are warned and ignored.
-- `renderQuickSetup(ctx)`
+- `drawPackQuickContent(ctx)`
   Coordinator-owned Quick Setup content. See [QUICK_SETUP.md](QUICK_SETUP.md).
 - `hideHashMarker`
   Suppresses the HUD hash marker while keeping the rest of the coordinator surface active.
@@ -110,9 +110,9 @@ Each discovered coordinated module must expose:
 `host.drawQuickContent(...)` is optional.
 
 These are full Lib host methods. The module-authored callbacks registered with
-Lib receive the author surfaces as `drawTab(ctx)` and
-`drawQuickContent(ctx)`. The context contains `imgui`, author `session`,
-author `host`, and bound `widgets`.
+Lib receive the author surfaces as `drawTab(draw)` and
+`drawQuickContent(draw)`. The draw object contains `imgui`, author `session`,
+author `host`, and bound `widgets` / `nav`.
 
 Lib owns module definition preparation and lifecycle validation before the host is published.
 Framework trusts Lib-created hosts. Activation-time mutation sync is owned by
@@ -146,7 +146,7 @@ Module tabs are simple:
 
 Quick Setup renders in this order:
 1. built-in profile quick selector
-2. coordinator-owned content from `opts.renderQuickSetup(ctx)`
+2. coordinator-owned content from `opts.drawPackQuickContent(ctx)`
 3. each discovered enabled module with quick content support
 
 Quick content is provided by coordinator code or module hosts.

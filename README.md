@@ -77,9 +77,9 @@ Discovered modules render through:
 - optional `host.drawQuickContent(imgui)`
 
 The module-authored callbacks registered with Lib receive
-`drawTab(ctx)` and `drawQuickContent(ctx)`. Framework calls the live `ModuleHost`
-methods; Lib supplies the draw context with `imgui`, author `session`, author
-`host`, and bound `widgets`.
+`drawTab(draw)` and `drawQuickContent(draw)`. Framework calls the live `ModuleHost`
+methods; Lib supplies the draw object with `imgui`, author `session`, author
+`host`, and bound `widgets` / `nav`.
 
 Sidebar behavior:
 
@@ -96,7 +96,7 @@ local ok = Framework.tryInit(PACK_ID, "My Modpack", config, #config.Profiles, de
     moduleOrder = {
         "ExampleModule",
     },
-    renderQuickSetup = renderQuickSetup,
+    drawPackQuickContent = drawPackQuickContent,
 })
 if not ok then
     return

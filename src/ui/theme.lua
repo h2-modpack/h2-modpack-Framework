@@ -1,6 +1,24 @@
 local deps = ...
-local lib = deps.lib
 local rom = deps.rom
+
+local IMGUI_TREE_NODE_FLAGS = _G.ImGuiTreeNodeFlags or {
+    None = 0,
+    Selected = 1,
+    Framed = 2,
+    AllowOverlap = 4,
+    NoTreePushOnOpen = 8,
+    NoAutoOpenOnLog = 16,
+    DefaultOpen = 32,
+    OpenOnDoubleClick = 64,
+    OpenOnArrow = 128,
+    Leaf = 256,
+    Bullet = 512,
+    FramePadding = 1024,
+    SpanAvailWidth = 2048,
+    SpanFullWidth = 4096,
+    NavLeftJumpsBackHere = 8192,
+    CollapsingHeader = 26,
+}
 
 --- Create the shared theme styling used by the Framework UI and HUD.
 --- @return table theme Theme object exposing colors, ImGui flags, and push/pop helpers.
@@ -61,7 +79,8 @@ local function createTheme()
 
     local function PushTheme()
         for _, entry in ipairs(themeColors) do
-            ui.PushStyleColor(entry[1], lib.imguiHelpers.unpackColor(entry[2]))
+            local color = entry[2]
+            ui.PushStyleColor(entry[1], color[1], color[2], color[3], color[4])
         end
     end
 
@@ -71,7 +90,7 @@ local function createTheme()
 
     return {
         colors             = colors,
-        ImGuiTreeNodeFlags = lib.imguiHelpers.ImGuiTreeNodeFlags,
+        ImGuiTreeNodeFlags = IMGUI_TREE_NODE_FLAGS,
         PushTheme          = PushTheme,
         PopTheme           = PopTheme,
     }

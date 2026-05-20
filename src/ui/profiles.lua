@@ -3,8 +3,11 @@ local FIELD_MEDIUM = 0.5
 local FIELD_NARROW = 0.3
 local FIELD_WIDE = 0.85
 
+local function TextColored(ui, color, text)
+    ui.TextColored(color[1], color[2], color[3], color[4], text)
+end
+
 local function createUIProfiles()
-    local lib = ctx.lib
     local rom = ctx.rom
     local ui = rom.ImGui
     local config = ctx.config
@@ -73,7 +76,7 @@ local function createUIProfiles()
     function Profiles.drawQuickSelector()
         local winW = ui.GetWindowWidth()
 
-        lib.imguiHelpers.textColored(ui, colors.info, "Select a profile to automatically configure the modpack:")
+        TextColored(ui, colors.info, "Select a profile to automatically configure the modpack:")
         ui.Spacing()
 
         if slotLabelsDirty then rebuildSlotLabels() end
@@ -115,13 +118,13 @@ local function createUIProfiles()
     function Profiles.draw()
         local winW = ui.GetWindowWidth()
 
-        lib.imguiHelpers.textColored(ui, colors.info, "Export / Import")
+        TextColored(ui, colors.info, "Export / Import")
         ui.Indent()
 
         local canonical, fingerprint = runtime.getCachedHash()
         ui.Text("Config ID:")
         ui.SameLine()
-        lib.imguiHelpers.textColored(ui, colors.success, fingerprint)
+        TextColored(ui, colors.success, fingerprint)
         ui.SameLine()
         if ui.Button("Copy") then
             ui.SetClipboardText(canonical)
@@ -154,7 +157,7 @@ local function createUIProfiles()
         ui.Separator()
         ui.Spacing()
 
-        lib.imguiHelpers.textColored(ui, colors.info, "Saved Profiles")
+        TextColored(ui, colors.info, "Saved Profiles")
         ui.Indent()
 
         if slotLabelsDirty then rebuildSlotLabels() end
@@ -281,7 +284,7 @@ local function createUIProfiles()
 
         ui.Spacing()
         if importFeedback then
-            lib.imguiHelpers.textColored(ui, importFeedbackColor, importFeedback)
+            TextColored(ui, importFeedbackColor, importFeedback)
         end
     end
 

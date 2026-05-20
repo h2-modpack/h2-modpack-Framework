@@ -6,7 +6,6 @@ local frameworkPluginGuid = deps.frameworkPluginGuid
 local logging = import "logging.lua"
 local hashCodec = import "hash_codec.lua"
 local createTheme = import("ui/theme.lua", nil, {
-    lib = lib,
     rom = rom,
 })
 local createModuleRegistry = import("module_registry.lua", nil, {
@@ -28,7 +27,6 @@ local createConfigHash = import("config_hash.lua", nil, {
 })
 local createHud = import("hud.lua")
 local createUI = import("ui.lua", nil, {
-    lib = lib,
     rom = rom,
     logging = logging,
 })
@@ -71,8 +69,8 @@ local function ValidateInitArgs(packId, windowTitle, config, numProfiles, defaul
         "Framework.init: hideHashMarker must be a boolean when provided")
     assert(opts.moduleOrder == nil or type(opts.moduleOrder) == "table",
         "Framework.init: opts.moduleOrder must be a table when provided")
-    assert(opts.renderQuickSetup == nil or type(opts.renderQuickSetup) == "function",
-        "Framework.init: opts.renderQuickSetup must be a function when provided")
+    assert(opts.drawPackQuickContent == nil or type(opts.drawPackQuickContent) == "function",
+        "Framework.init: opts.drawPackQuickContent must be a function when provided")
     assert(type(config.ModEnabled) == "boolean",
         "Framework.init: config.ModEnabled must be a boolean")
     assert(type(config.DebugMode) == "boolean",
@@ -173,7 +171,7 @@ local function init(packId, windowTitle, config, numProfiles, defaultProfiles, o
     local hud = bootConstructors.createHud(packId, packIndex, configHash, theme, config,
         opts.hideHashMarker == true, runtime)
     local ui = bootConstructors.createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
-        numProfiles, defaultProfiles, opts.renderQuickSetup, auditSavedProfiles, runtime)
+        numProfiles, defaultProfiles, opts.drawPackQuickContent, auditSavedProfiles, runtime)
 
     auditSavedProfiles(packId, config.Profiles, moduleRegistry)
 

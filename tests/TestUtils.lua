@@ -342,9 +342,9 @@ local function createDefaultFrameworkRuntime()
 end
 
 local function createTestUI(moduleRegistry, hud, theme, config, packId, windowTitle, numProfiles,
-                            defaultProfiles, renderQuickSetup, auditSavedProfiles, frameworkRuntime)
+                            defaultProfiles, drawPackQuickContent, auditSavedProfiles, frameworkRuntime)
     return createUI(moduleRegistry, hud, theme, config, packId, windowTitle, numProfiles, defaultProfiles,
-        renderQuickSetup, auditSavedProfiles, frameworkRuntime or createDefaultFrameworkRuntime())
+        drawPackQuickContent, auditSavedProfiles, frameworkRuntime or createDefaultFrameworkRuntime())
 end
 
 local function createTestHud(packId, packIndex, configHash, theme, config, hideHashMarker, frameworkRuntime)

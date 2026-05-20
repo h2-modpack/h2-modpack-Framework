@@ -1,9 +1,8 @@
 local ctx = ...
 
-local lib = ctx.lib
 local rom = ctx.rom
 local ui = rom.ImGui
-local renderQuickSetup = ctx.renderQuickSetup
+local drawPackQuickContent = ctx.drawPackQuickContent
 local profiles = ctx.profiles
 local staging = ctx.staging
 local runtime = ctx.runtime
@@ -11,7 +10,11 @@ local snapshotAccess = ctx.snapshotAccess
 local colors = ctx.colors
 local theme = ctx.theme
 
-local quickSetupContext = {
+local function TextColored(imgui, color, text)
+    imgui.TextColored(color[1], color[2], color[3], color[4], text)
+end
+
+local packQuickContentContext = {
     ui = ui,
     colors = colors,
     theme = theme,
@@ -27,8 +30,8 @@ local function draw(quickList, snapshot)
     ui.Separator()
     ui.Spacing()
 
-    if type(renderQuickSetup) == "function" then
-        renderQuickSetup(quickSetupContext)
+    if type(drawPackQuickContent) == "function" then
+        drawPackQuickContent(packQuickContentContext)
     end
 
     for _, entry in ipairs(quickList or {}) do
@@ -40,7 +43,7 @@ local function draw(quickList, snapshot)
 
             ui.Separator()
             ui.Spacing()
-            lib.imguiHelpers.textColored(ui, colors.info, entry.name or entry.id)
+            TextColored(ui, colors.info, entry.name or entry.id)
             ui.Spacing()
             host.drawQuickContent(ui)
             runtime.commitEntrySession(entry, snapshot)

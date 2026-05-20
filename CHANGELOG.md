@@ -54,7 +54,7 @@
   - positional `Framework.init(...)` arguments plus optional `opts`
   - Lib-host discovery and snapshot-host runtime behavior
 - Expanded `HASH_PROFILE_ABI.md` with hash/profile invariants, token escaping, decode behavior, and shipped-module compatibility rules.
-- Updated Quick Setup docs for coordinator-owned `opts.renderQuickSetup(ctx)` and module-host quick content.
+- Updated Quick Setup docs for coordinator-owned `opts.drawPackQuickContent(ctx)` and module-host quick content.
 - Updated README and contributor docs to focus on the host-first coordinator/module contract.
 
 ### Tests

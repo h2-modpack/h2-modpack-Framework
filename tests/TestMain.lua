@@ -953,7 +953,7 @@ function TestMain:testMasterToggleRollsBackTouchedRuntimeStateOnFailure()
     }
 
     local builtUi = FrameworkTestApi.createUI(moduleRegistry, hud, theme, config, "test-pack", "Test Window",
-        setup.NUM_PROFILES, setup.defaultProfiles, setup.renderQuickSetup)
+        setup.NUM_PROFILES, setup.defaultProfiles, setup.drawPackQuickContent)
     builtUi.addMenuBar()
 
     local okFirst, errFirst = pcall(builtUi.renderWindow)
@@ -1152,8 +1152,8 @@ function TestMain:testQuickSetupRendersModuleQuickContent()
                 { type = "bool", alias = "FlagA", default = false },
             },
             DrawTab = function() end,
-            DrawQuickContent = function(ctx)
-                ctx.imgui.Checkbox("Quick B", false)
+            DrawQuickContent = function(draw)
+                draw.imgui.Checkbox("Quick B", false)
             end,
         },
     })
@@ -1188,7 +1188,7 @@ function TestMain:testQuickSetupRendersModuleQuickContent()
     }
 
     local builtUi = FrameworkTestApi.createUI(moduleRegistry, hud, theme, config, "test-pack", "Test Window",
-        setup.NUM_PROFILES, setup.defaultProfiles, setup.renderQuickSetup)
+        setup.NUM_PROFILES, setup.defaultProfiles, setup.drawPackQuickContent)
     builtUi.addMenuBar()
     local ok, err = pcall(builtUi.renderWindow)
 
@@ -1300,7 +1300,7 @@ function TestMain:testQuickSetupUsesLatestLiveHostForQuickContent()
     }
 
     local builtUi = FrameworkTestApi.createUI(moduleRegistry, hud, theme, config, "test-pack", "Test Window",
-        setup.NUM_PROFILES, setup.defaultProfiles, setup.renderQuickSetup)
+        setup.NUM_PROFILES, setup.defaultProfiles, setup.drawPackQuickContent)
     builtUi.addMenuBar()
     local okFirst, errFirst = pcall(builtUi.renderWindow)
 
@@ -1538,7 +1538,7 @@ function TestMain:testDisablingRunDataModuleFlushesSetupRunDataWhenMenuCloses()
         defaultProfiles = {
             { Name = "", Hash = "", Tooltip = "" },
         },
-        renderQuickSetup = function(ctx)
+        drawPackQuickContent = function(ctx)
             if not quickSetupRan then
                 quickSetupRan = true
                 ctx.setModulesEnabled({ "Alpha" }, false)
@@ -1554,7 +1554,7 @@ function TestMain:testDisablingRunDataModuleFlushesSetupRunDataWhenMenuCloses()
     }
 
     local builtUi = FrameworkTestApi.createUI(moduleRegistry, hud, theme, config, "test-pack", "Test Window",
-        setup.NUM_PROFILES, setup.defaultProfiles, setup.renderQuickSetup)
+        setup.NUM_PROFILES, setup.defaultProfiles, setup.drawPackQuickContent)
     builtUi.addMenuBar()
     local ok, err = pcall(builtUi.renderWindow)
     builtUi.addMenuBar()

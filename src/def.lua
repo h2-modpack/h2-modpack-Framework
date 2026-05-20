@@ -18,7 +18,7 @@ local Framework = {}
 
 ---@class AdamantModpackFramework.InitOpts
 ---@field moduleOrder? string[] Ordered module ids to pin first in the sidebar.
----@field renderQuickSetup? fun(ctx: AdamantModpackFramework.QuickSetupContext) Coordinator-owned Custom Quick Setup renderer.
+---@field drawPackQuickContent? fun(ctx: AdamantModpackFramework.PackQuickContentContext) Coordinator-owned Quick Setup renderer.
 ---@field hideHashMarker? boolean Suppress the HUD hash marker while keeping the coordinator UI active.
 
 ---@class AdamantModpackFramework.ThemeColors
@@ -36,7 +36,7 @@ local Framework = {}
 ---@field PushTheme fun()
 ---@field PopTheme fun()
 
----@class AdamantModpackFramework.QuickSetupContext
+---@class AdamantModpackFramework.PackQuickContentContext
 ---@field ui table ImGui API table.
 ---@field colors AdamantModpackFramework.ThemeColors
 ---@field theme AdamantModpackFramework.Theme

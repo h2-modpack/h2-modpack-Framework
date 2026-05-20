@@ -1,6 +1,5 @@
 local ctx = ...
 
-local lib = ctx.lib
 local rom = ctx.rom
 local ui = rom.ImGui
 local config = ctx.config
@@ -10,8 +9,12 @@ local staging = ctx.staging
 local runtime = ctx.runtime
 local frameworkRuntime = ctx.frameworkRuntime
 
+local function TextColored(imgui, color, text)
+    imgui.TextColored(color[1], color[2], color[3], color[4], text)
+end
+
 local function draw(snapshot)
-    lib.imguiHelpers.textColored(ui, colors.info, "Developer options for module authors and debugging.")
+    TextColored(ui, colors.info, "Developer options for module authors and debugging.")
     ui.Spacing()
 
     -- Framework debug gates framework-owned warnings such as module indexing, hash import,
@@ -40,7 +43,7 @@ local function draw(snapshot)
         runtime.resyncAllSessions()
     end
 
-    lib.imguiHelpers.textColored(ui, colors.info, "Per-Module Debug")
+    TextColored(ui, colors.info, "Per-Module Debug")
     ui.Spacing()
 
     for _, entry in ipairs(moduleRegistry.modules) do

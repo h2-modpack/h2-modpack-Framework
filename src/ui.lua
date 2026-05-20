@@ -1,10 +1,13 @@
 local deps = ...
-local lib = deps.lib
 local rom = deps.rom
 local logging = deps.logging
 
+local function TextColored(ui, color, text)
+    ui.TextColored(color[1], color[2], color[3], color[4], text)
+end
+
 local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle, numProfiles,
-                        defaultProfiles, renderQuickSetup, auditSavedProfiles, frameworkRuntime)
+                        defaultProfiles, drawPackQuickContent, auditSavedProfiles, frameworkRuntime)
     local ui = rom.ImGui
     local DEFAULT_WINDOW_WIDTH = 1280
     local DEFAULT_WINDOW_HEIGHT = 840
@@ -77,7 +80,6 @@ local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
     })
 
     profiles = import("ui/profiles.lua", nil, {
-        lib = lib,
         rom = rom,
         config = config,
         colors = colors,
@@ -90,9 +92,8 @@ local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
     })
 
     local drawQuickSetup = import("ui/quick_setup.lua", nil, {
-        lib = lib,
         rom = rom,
-        renderQuickSetup = renderQuickSetup,
+        drawPackQuickContent = drawPackQuickContent,
         theme = theme,
         profiles = profiles,
         staging = staging,
@@ -109,7 +110,6 @@ local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
     })
 
     local drawDev = import("ui/dev.lua", nil, {
-        lib = lib,
         rom = rom,
         config = config,
         colors = colors,
@@ -169,7 +169,7 @@ local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
 
         if not staging.ModEnabled then
             ui.Separator()
-            lib.imguiHelpers.textColored(ui, colors.warning, "Mod is currently disabled. All changes have been reverted.")
+            TextColored(ui, colors.warning, "Mod is currently disabled. All changes have been reverted.")
             return
         end
 

@@ -17,7 +17,7 @@ Typical content:
 Quick Setup renders in this order:
 
 1. built-in profile quick selector
-2. coordinator-owned content from `opts.renderQuickSetup(ctx)`
+2. coordinator-owned content from `opts.drawPackQuickContent(ctx)`
 3. each discovered enabled module with quick content support
 
 This happens inside [`src/ui.lua`](src/ui.lua).
@@ -27,12 +27,12 @@ This happens inside [`src/ui.lua`](src/ui.lua).
 Coordinators may inject their own quick content through:
 
 ```lua
-local function renderQuickSetup(ctx)
+local function drawPackQuickContent(ctx)
     ...
 end
 
 Framework.tryInit(PACK_ID, "My Modpack", config, #config.Profiles, defaultProfiles, {
-    renderQuickSetup = renderQuickSetup,
+    drawPackQuickContent = drawPackQuickContent,
 })
 ```
 
