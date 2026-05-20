@@ -1,6 +1,3 @@
-local deps = ...
-local lib = deps.lib
-
 --- Create the HUD subsystem for one coordinator pack.
 --- @param packId string Pack identifier used for component naming.
 --- @param packIndex number Stable vertical stacking index for this pack.
@@ -8,10 +5,13 @@ local lib = deps.lib
 --- @param theme table Theme object returned by `ui/theme.lua`.
 --- @param config table Coordinator config table containing `ModEnabled`.
 --- @param hideHashMarker boolean|nil Optional pack-level flag to suppress the HUD fingerprint marker.
+--- @param frameworkRuntime table Framework runtime returned by Lib.
 --- @return table hud HUD object exposing marker/hash update helpers.
-local function createHud(packId, packIndex, configHash, theme, config, hideHashMarker)
-    assert(lib and lib.overlays and type(lib.overlays.defineSystem) == "function",
-        "Framework.init: adamant-ModpackLib overlays are not available")
+local function createHud(packId, packIndex, configHash, theme, config, hideHashMarker, frameworkRuntime)
+    assert(type(frameworkRuntime) == "table"
+        and type(frameworkRuntime.overlays) == "table"
+        and type(frameworkRuntime.overlays.define) == "function",
+        "Framework.init: adamant-ModpackLib framework overlays are not available")
 
     local componentName = "ModpackMark_" .. packId
 
@@ -22,11 +22,11 @@ local function createHud(packId, packIndex, configHash, theme, config, hideHashM
     local markerContext = nil
 
     if not markerHidden then
-        lib.overlays.defineSystem("adamant-framework." .. packId .. ".hud", function(overlays)
+        frameworkRuntime.overlays.define(packId, "hud", function(overlays)
             overlays.createLine("hash", {
                 componentName = componentName,
                 region = "middleRightStack",
-                order = lib.overlays.order.framework + packIndex,
+                order = frameworkRuntime.overlays.order.framework + packIndex,
                 visible = function()
                     return config.ModEnabled == true and currentHash ~= ""
                 end,

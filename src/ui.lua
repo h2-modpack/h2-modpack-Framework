@@ -4,7 +4,7 @@ local rom = deps.rom
 local logging = deps.logging
 
 local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle, numProfiles,
-                        defaultProfiles, renderQuickSetup, auditSavedProfiles)
+                        defaultProfiles, renderQuickSetup, auditSavedProfiles, frameworkRuntime)
     local ui = rom.ImGui
     local DEFAULT_WINDOW_WIDTH = 1280
     local DEFAULT_WINDOW_HEIGHT = 840
@@ -116,6 +116,7 @@ local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
         moduleRegistry = moduleRegistry,
         staging = staging,
         runtime = runtime,
+        frameworkRuntime = frameworkRuntime,
     })
 
     snapshotToStaging()
@@ -217,7 +218,7 @@ local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
 
     local function suppressOverlays()
         if not uiSuppressionToken then
-            uiSuppressionToken = lib.overlays.suppressForUi()
+            uiSuppressionToken = frameworkRuntime.ui.suppressOverlays()
         end
     end
 

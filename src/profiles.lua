@@ -1,5 +1,4 @@
 local deps = ...
-local lib = deps.lib
 local hashCodec = deps.hashCodec
 local createHashGroupBuilder = deps.createHashGroupBuilder
 local logging = deps.logging
@@ -24,10 +23,10 @@ end
 --- Warns when a profile contains a field key for a known module that
 --- no longer exists, indicating a likely rename. Namespaces absent from the module registry
 --- are skipped silently because "not installed" and "renamed" are indistinguishable.
-function profiles.auditSavedProfiles(packId, profileSlots, moduleRegistry)
+function profiles.auditSavedProfiles(packId, profileSlots, moduleRegistry, hashing)
     local knownModules = {}
     local issueCount = 0
-    local hashGroupBuilder = createHashGroupBuilder(packId)
+    local hashGroupBuilder = createHashGroupBuilder(hashing)
 
     for _, entry in ipairs(moduleRegistry.modules) do
         local fields = {}
@@ -36,7 +35,7 @@ function profiles.auditSavedProfiles(packId, profileSlots, moduleRegistry)
             for _, group in ipairs(groups or {}) do
                 fields[tostring(group.key)] = true
             end
-            for _, root in ipairs(lib.hashing.getRoots(entry.storage)) do
+            for _, root in ipairs(hashing.getRoots(entry.storage)) do
                 if root.alias ~= "Enabled" and not groupedAliases[root.alias] then
                     fields[tostring(root.alias)] = true
                 end

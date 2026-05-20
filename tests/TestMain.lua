@@ -28,46 +28,46 @@ function TestMain:testCreateGuiCallbacksAreSafeBeforeInit()
 end
 
 function TestMain:testCreateHudRegistersFrameworkHashOverlay()
-    local previousDefineSystem = lib.overlays.defineSystem
-    local previousDispatchCommit = LibOverlays.dispatchCommit
-    local registeredOwner = nil
+    local overlayOrder = {
+        framework = 0,
+        module = 1000,
+        debug = 2000,
+    }
+    local registeredPack = nil
+    local registeredScope = nil
     local registeredLine = nil
     local projectedValue = nil
     local registeredOpts = nil
     local refreshCalls = 0
 
-    lib.overlays.defineSystem = function(owner, register)
-        registeredOwner = owner
-        local registrar = {
-            createLine = function(name, spec)
-                registeredLine = name
-                registeredOpts = spec
+    local frameworkRuntime = {
+        overlays = {
+            order = overlayOrder,
+            define = function(packId, scope, register)
+                registeredPack = packId
+                registeredScope = scope
+                local registrar = {
+                    createLine = function(name, spec)
+                        registeredLine = name
+                        registeredOpts = spec
+                    end,
+                    onCommit = function(callback)
+                        registeredOpts._commit = callback
+                    end,
+                }
+                register(registrar)
+                registeredOpts._commit({
+                    setLine = function(_, value)
+                        projectedValue = value
+                    end,
+                    refresh = function()
+                        refreshCalls = refreshCalls + 1
+                    end,
+                }, {})
+                return true
             end,
-            onCommit = function(callback)
-                registeredOpts._commit = callback
-            end,
-        }
-        register(registrar)
-        registeredOpts._commit({
-            setLine = function(_, value)
-                projectedValue = value
-            end,
-            refresh = function()
-                refreshCalls = refreshCalls + 1
-            end,
-        }, {})
-        return true
-    end
-    LibOverlays.dispatchCommit = function()
-        registeredOpts._commit({
-            setLine = function(_, value)
-                projectedValue = value
-            end,
-            refresh = function()
-                refreshCalls = refreshCalls + 1
-            end,
-        }, {})
-    end
+        },
+    }
 
     local theme = FrameworkTestApi.createTheme()
     local config = { ModEnabled = true }
@@ -80,16 +80,14 @@ function TestMain:testCreateHudRegistersFrameworkHashOverlay()
         end,
     }
 
-    local hud = FrameworkTestApi.createHud("test-pack", 1, hash, theme, config, false)
+    local hud = FrameworkTestApi.createHud("test-pack", 1, hash, theme, config, false, frameworkRuntime)
     hud.setModMarker(false)
 
-    lib.overlays.defineSystem = previousDefineSystem
-    LibOverlays.dispatchCommit = previousDispatchCommit
-
-    lu.assertEquals(registeredOwner, "adamant-framework.test-pack.hud")
+    lu.assertEquals(registeredPack, "test-pack")
+    lu.assertEquals(registeredScope, "hud")
     lu.assertEquals(registeredLine, "hash")
     lu.assertEquals(registeredOpts.region, "middleRightStack")
-    lu.assertEquals(registeredOpts.order, lib.overlays.order.framework + 1)
+    lu.assertEquals(registeredOpts.order, overlayOrder.framework + 1)
     lu.assertEquals(projectedValue, "")
     lu.assertFalse(registeredOpts.visible())
     lu.assertEquals(refreshCalls, 2)
@@ -187,7 +185,7 @@ function TestMain:testInitLeavesStartupMutationSyncToHostActivation()
     rom.game.SetupRunData = function()
         setupRunDataCalls = setupRunDataCalls + 1
     end
-    lib.coordinator.register("startup-pack", { ModEnabled = true })
+    public.registerCoordinator("startup-pack", { ModEnabled = true })
 
     local harness = CreateFrameworkHarness({
         constructors = {
@@ -241,7 +239,7 @@ function TestMain:testInitLeavesStartupMutationSyncToHostActivation()
         {}
     )
 
-    lib.coordinator.register("startup-pack", nil)
+    public.registerCoordinator("startup-pack", nil)
     rom.game.SetupRunData = previousSetupRunData
 
     lu.assertEquals(setupRunDataCalls, 0)
@@ -249,7 +247,7 @@ end
 
 function TestMain:testModuleActivationOwnsStartupSyncBeforeFrameworkInit()
     local packId = "load-order-pack"
-    lib.coordinator.register(packId, nil)
+    public.registerCoordinator(packId, nil)
 
     local previousSetupRunData = rom.game.SetupRunData
     local setupRunDataCalls = 0
@@ -275,18 +273,18 @@ function TestMain:testModuleActivationOwnsStartupSyncBeforeFrameworkInit()
         definition = definition,
         store = store,
         session = session,
-        registerPatchMutation = function(plan)
-            buildCalls = buildCalls + 1
-            plan:set(target, "Value", "patched")
-        end,
         drawTab = function() end,
     })
+    authorHost.mutation.patch(function(plan)
+        buildCalls = buildCalls + 1
+        plan:set(target, "Value", "patched")
+    end)
     authorHost.tryActivate()
 
     lu.assertEquals(buildCalls, 1)
     lu.assertEquals(target.Value, "patched")
     lu.assertEquals(setupRunDataCalls, 1)
-    lib.coordinator.register(packId, {
+    public.registerCoordinator(packId, {
         ModEnabled = true,
     })
 
@@ -352,7 +350,7 @@ function TestMain:testModuleActivationOwnsStartupSyncBeforeFrameworkInit()
     )
 
     local ok, err = host.revertMutation()
-    lib.coordinator.register(packId, nil)
+    public.registerCoordinator(packId, nil)
     rom.game.SetupRunData = previousSetupRunData
 
     lu.assertTrue(ok, tostring(err))
@@ -374,7 +372,7 @@ function TestMain:testRepeatedInitReplacesPackStateAndKeepsStablePackIndex()
     local firstPack
     local secondPack
 
-    lib.coordinator.register(packId, {
+    public.registerCoordinator(packId, {
         ModEnabled = true,
     })
 
@@ -438,7 +436,7 @@ function TestMain:testRepeatedInitReplacesPackStateAndKeepsStablePackIndex()
 
     packRegistry.packs[packId] = previousPack
     packRegistry.packList = previousPackList
-    lib.coordinator.register(packId, nil)
+    public.registerCoordinator(packId, nil)
 
     lu.assertTrue(firstPack ~= secondPack)
     lu.assertEquals(activePack, secondPack)
@@ -457,26 +455,42 @@ function TestMain:testRepeatedInitDisposesPreviousOpenUiSuppression()
         previousPackList[i] = value
     end
 
-    local previousSuppressForUi = lib.overlays.suppressForUi
+    local previousCreateFrameworkRuntime = lib.createFrameworkRuntime
     local previousImGui = rom.ImGui
     local suppressCalls = 0
     local releaseCalls = 0
     local flushCalls = 0
+    local hashing = previousCreateFrameworkRuntime("adamant-ModpackFramework").hashing
 
-    lib.coordinator.register(packId, {
+    public.registerCoordinator(packId, {
         ModEnabled = true,
     })
-    lib.overlays.suppressForUi = function()
-        suppressCalls = suppressCalls + 1
-        local released = false
+    lib.createFrameworkRuntime = function(frameworkPluginGuid)
+        local runtime = previousCreateFrameworkRuntime(frameworkPluginGuid)
         return {
-            release = function()
-                if released then
-                    return
-                end
-                released = true
-                releaseCalls = releaseCalls + 1
-            end,
+            diagnostics = runtime.diagnostics,
+            coordinator = runtime.coordinator,
+            hashing = hashing,
+            modules = runtime.modules,
+            overlays = runtime.overlays,
+            ui = {
+                suppressOverlays = function()
+                    suppressCalls = suppressCalls + 1
+                    local released = false
+                    return {
+                        release = function()
+                            if released then
+                                return
+                            end
+                            released = true
+                            releaseCalls = releaseCalls + 1
+                        end,
+                    }
+                end,
+                areOverlaysSuppressed = function()
+                    return suppressCalls > releaseCalls
+                end,
+            },
         }
     end
     rom.ImGui = {
@@ -564,11 +578,11 @@ function TestMain:testRepeatedInitDisposesPreviousOpenUiSuppression()
 
     local activePack = packRegistry.packs[packId]
 
-    lib.overlays.suppressForUi = previousSuppressForUi
+    lib.createFrameworkRuntime = previousCreateFrameworkRuntime
     rom.ImGui = previousImGui
     packRegistry.packs[packId] = previousPack
     packRegistry.packList = previousPackList
-    lib.coordinator.register(packId, nil)
+    public.registerCoordinator(packId, nil)
 
     lu.assertTrue(firstPack ~= secondPack)
     lu.assertEquals(activePack, secondPack)
@@ -588,7 +602,7 @@ function TestMain:testFailedInitDoesNotRegisterPack()
         previousPackList[i] = value
     end
 
-    lib.coordinator.register(packId, {
+    public.registerCoordinator(packId, {
         ModEnabled = true,
     })
 
@@ -647,7 +661,7 @@ function TestMain:testFailedInitDoesNotRegisterPack()
 
     packRegistry.packs[packId] = previousPack
     packRegistry.packList = previousPackList
-    lib.coordinator.register(packId, nil)
+    public.registerCoordinator(packId, nil)
 
     lu.assertEquals(packIdCount, 0)
     lu.assertEquals(packRegistry.packs[packId], previousPack)
@@ -662,7 +676,7 @@ function TestMain:testTryInitReturnsPackOnSuccess()
         previousPackList[i] = value
     end
 
-    lib.coordinator.register(packId, {
+    public.registerCoordinator(packId, {
         ModEnabled = true,
     })
 
@@ -715,7 +729,7 @@ function TestMain:testTryInitReturnsPackOnSuccess()
 
     packRegistry.packs[packId] = previousPack
     packRegistry.packList = previousPackList
-    lib.coordinator.register(packId, nil)
+    public.registerCoordinator(packId, nil)
 
     lu.assertTrue(ok)
     lu.assertNotNil(pack)
@@ -733,7 +747,7 @@ function TestMain:testTryInitReturnsErrorAndDoesNotRegisterPack()
         previousPackList[i] = value
     end
 
-    lib.coordinator.register(packId, {
+    public.registerCoordinator(packId, {
         ModEnabled = true,
     })
 
@@ -792,7 +806,7 @@ function TestMain:testTryInitReturnsErrorAndDoesNotRegisterPack()
 
     packRegistry.packs[packId] = previousPack
     packRegistry.packList = previousPackList
-    lib.coordinator.register(packId, nil)
+    public.registerCoordinator(packId, nil)
     RestoreWarnings()
 
     lu.assertFalse(ok)
@@ -808,7 +822,7 @@ end
 function TestMain:testMasterToggleRollsBackTouchedRuntimeStateOnFailure()
     CaptureWarnings()
 
-    lib.coordinator.register("test-pack", { ModEnabled = false })
+    public.registerCoordinator("test-pack", { ModEnabled = false })
     local previousSetupRunData = rom.game.SetupRunData
     local setupRunDataCalls = 0
     rom.game.SetupRunData = function()
@@ -948,7 +962,7 @@ function TestMain:testMasterToggleRollsBackTouchedRuntimeStateOnFailure()
 
     rom.ImGui = previousImGui
     rom.game.SetupRunData = previousSetupRunData
-    lib.coordinator.register("test-pack", nil)
+    public.registerCoordinator("test-pack", nil)
     RestoreWarnings()
 
     lu.assertTrue(okFirst, tostring(errFirst))
@@ -1372,18 +1386,9 @@ function TestMain:testHostGuiCloseReleasesOverlaySuppression()
     local flushCalls = 0
     local suppressCalls = 0
     local releaseCalls = 0
-    local previousSuppressForUi = lib.overlays.suppressForUi
     local previousImGui = rom.ImGui
     local function noop() end
 
-    lib.overlays.suppressForUi = function()
-        suppressCalls = suppressCalls + 1
-        return {
-            release = function()
-                releaseCalls = releaseCalls + 1
-            end,
-        }
-    end
     rom.ImGui = {
         MenuItem = function()
             return true
@@ -1416,13 +1421,23 @@ function TestMain:testHostGuiCloseReleasesOverlaySuppression()
         Profiles = {},
     }, "test-pack", "Test Window", 1, {
         { Name = "", Hash = "", Tooltip = "" },
-    }, nil)
+    }, nil, nil, {
+        ui = {
+            suppressOverlays = function()
+                suppressCalls = suppressCalls + 1
+                return {
+                    release = function()
+                        releaseCalls = releaseCalls + 1
+                    end,
+                }
+            end,
+        },
+    })
 
     ui.addMenuBar()
     ui.handleHostGuiClosed()
 
     rom.ImGui = previousImGui
-    lib.overlays.suppressForUi = previousSuppressForUi
 
     lu.assertEquals(flushCalls, 1)
     lu.assertEquals(suppressCalls, 1)

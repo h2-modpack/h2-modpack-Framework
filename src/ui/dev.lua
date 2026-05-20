@@ -8,6 +8,7 @@ local colors = ctx.colors
 local moduleRegistry = ctx.moduleRegistry
 local staging = ctx.staging
 local runtime = ctx.runtime
+local frameworkRuntime = ctx.frameworkRuntime
 
 local function draw(snapshot)
     lib.imguiHelpers.textColored(ui, colors.info, "Developer options for module authors and debugging.")
@@ -17,10 +18,6 @@ local function draw(snapshot)
     -- and framework-managed runtime mutation failures.
     -- Load-time schema validation lives in Lib.
     -- Read/write directly from config - intentional exception to the staging pattern.
-    -- These flags have no external writers (no profile load),
-    -- so staging would add complexity with no correctness benefit.
-    -- lib.config.DebugMode is shared across packs: direct reads reflect changes from
-    -- other pack Dev tabs immediately, whereas staging would go stale.
     local fwVal, fwChg = ui.Checkbox("Framework Debug", config.DebugMode == true)
     if fwChg then
         config.DebugMode = fwVal
@@ -30,9 +27,9 @@ local function draw(snapshot)
         "Print framework diagnostics for module indexing, hash parsing, and runtime mutation failures.")
     end
 
-    local libVal, libChg = ui.Checkbox("Lib Debug", lib.config.DebugMode == true)
+    local libVal, libChg = ui.Checkbox("Lib Debug", frameworkRuntime.diagnostics.isLibDebugEnabled())
     if libChg then
-        lib.config.DebugMode = libVal
+        frameworkRuntime.diagnostics.setLibDebugEnabled(libVal)
     end
     if ui.IsItemHovered() then
         ui.SetTooltip(

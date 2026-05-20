@@ -33,8 +33,10 @@ local function attachModule(pluginGuid, definition, persisted, exports)
         session = session,
         drawTab = exports.DrawTab,
         drawQuickContent = exports.DrawQuickContent,
-        registerPatchMutation = patchPlan,
     })
+    if patchPlan ~= nil then
+        authorHost.mutation.patch(patchPlan)
+    end
     authorHost.tryActivate()
     exports.host = host
     rom.mods[pluginGuid] = exports
@@ -95,11 +97,14 @@ function TestModuleRegistry:testHostSnapshotUsesLiveHostAndWarnsWhenHostIsMissin
         getStorage = function()
             return entry.storage
         end,
-        getIdentity = function()
-            return {
-                id = entry.id,
-                modpack = entry.modpack,
-            }
+        getHostId = function()
+            return "test-GodPool"
+        end,
+        getModuleId = function()
+            return entry.id
+        end,
+        getPackId = function()
+            return entry.modpack
         end,
         getMeta = function()
             return {
@@ -162,11 +167,14 @@ function TestModuleRegistry:testCapturedSnapshotIsStableAcrossHostReplacement()
         getStorage = function()
             return entry.storage
         end,
-        getIdentity = function()
-            return {
-                id = entry.id,
-                modpack = entry.modpack,
-            }
+        getHostId = function()
+            return "test-GodPool"
+        end,
+        getModuleId = function()
+            return entry.id
+        end,
+        getPackId = function()
+            return entry.modpack
         end,
         getMeta = function()
             return {

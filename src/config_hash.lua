@@ -1,14 +1,13 @@
 local deps = ...
-local lib = deps.lib
 local rom = deps.rom
 local hashCodec = deps.hashCodec
 local createHashGroupBuilder = deps.createHashGroupBuilder
 local logging = deps.logging
 
-local function createConfigHash(moduleRegistry, config, packId)
+local function createConfigHash(moduleRegistry, config, packId, hashing)
     local HASH_VERSION = 1
     local ConfigHash = {}
-    local hashGroupBuilder = createHashGroupBuilder(packId)
+    local hashGroupBuilder = createHashGroupBuilder(hashing)
 
     local function ReadPersisted(entry, key, snapshot)
         return moduleRegistry.snapshot.getStorageValue(entry, key, snapshot)
@@ -87,7 +86,7 @@ local function createConfigHash(moduleRegistry, config, packId)
 
     local function GetRootStorage(entry)
         local roots = {}
-        for _, root in ipairs(lib.hashing.getRoots(entry.storage)) do
+        for _, root in ipairs(hashing.getRoots(entry.storage)) do
             if root.alias ~= "Enabled" then
                 roots[#roots + 1] = root
             end
@@ -211,7 +210,7 @@ local function createConfigHash(moduleRegistry, config, packId)
     end
 
     local function EncodeValue(root, value, entryLabel)
-        local encoded = lib.hashing.toHash(root, value)
+        local encoded = hashing.toHash(root, value)
         if encoded == nil then
             logging.warn(packId,
                 "GetConfigHash: skipping %s '%s' with unknown storage type '%s'",
@@ -222,7 +221,7 @@ local function createConfigHash(moduleRegistry, config, packId)
     end
 
     local function DecodeValue(root, str, entryLabel)
-        if lib.hashing.isHashTokenValid(root, str) == false then
+        if hashing.isHashTokenValid(root, str) == false then
             return nil, string.format(
                 "invalid %s '%s' hash value '%s'",
                 entryLabel,
@@ -231,7 +230,7 @@ local function createConfigHash(moduleRegistry, config, packId)
             )
         end
 
-        local decoded = lib.hashing.fromHash(root, str)
+        local decoded = hashing.fromHash(root, str)
         if decoded == nil then
             logging.warn(packId,
                 "ApplyConfigHash: defaulting %s '%s' with unknown storage type '%s'",
@@ -275,7 +274,7 @@ local function createConfigHash(moduleRegistry, config, packId)
                     if encoded ~= hashGroupBuilder.encodeValue(member.node, member.node.default) then
                         isDefault = false
                     end
-                    packedValue = lib.hashing.writePackedBits(packedValue, member.offset, member.width, encoded)
+                    packedValue = hashing.writePackedBits(packedValue, member.offset, member.width, encoded)
                 end
                 if not isDefault then
                     kv[entry.id .. "." .. group.key] = ConfigHash.EncodeBase62(packedValue)
@@ -285,7 +284,7 @@ local function createConfigHash(moduleRegistry, config, packId)
             for _, root in ipairs(GetRootStorage(entry)) do
                 if not meta.groupedAliases[root.alias] then
                     local current = ReadPersisted(entry, root.alias, snapshot)
-                    if not lib.hashing.valuesEqual(root, current, root.default) then
+                    if not hashing.valuesEqual(root, current, root.default) then
                         local encoded = EncodeValue(root, current, "storage root")
                         if encoded ~= nil then
                             kv[entry.id .. "." .. root.alias] = encoded
@@ -348,7 +347,7 @@ local function createConfigHash(moduleRegistry, config, packId)
                             )
                         end
                         for _, member in ipairs(group.members) do
-                            local encoded = lib.hashing.readPackedBits(packedValue, member.offset, member.width)
+                            local encoded = hashing.readPackedBits(packedValue, member.offset, member.width)
                             local ok, err = StagePersistedChecked(entry, member.alias,
                                 hashGroupBuilder.decodeValue(member.node, encoded), snapshot)
                             if ok == false then

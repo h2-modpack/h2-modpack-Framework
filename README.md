@@ -24,14 +24,13 @@ local data = import("mods/data.lua")
 local logic = import("mods/logic.lua").bind(data)
 local ui = import("mods/ui.lua").bind(data)
 
-local host = lib.tryCreateModule({
+local host, store = lib.tryCreateModule({
     pluginGuid = PLUGIN_GUID,
     config = config,
     modpack = PACK_ID,
     id = MODULE_ID,
     name = "Example Module",
     storage = data.buildStorage(),
-    registerHooks = logic.registerHooks,
     drawTab = ui.drawTab,
     drawQuickContent = ui.drawQuickContent,
 })
@@ -39,13 +38,14 @@ if not host then
     return
 end
 
+logic.registerHooks(host, store)
 local ok = host.tryActivate()
 if not ok then
     return
 end
 ```
 
-If a module does not register runtime hooks, `registerHooks` may be omitted.
+If a module does not register runtime hooks, skip the hook declaration call.
 Host activation publishes the created host into Lib's live-host registry. Framework discovers modules
 through that registry rather than reading module globals directly.
 
@@ -65,8 +65,8 @@ through that registry rather than reading module globals directly.
 The framework discovers modules that expose:
 
 - a Lib-published live host
-- `host.getIdentity().modpack == PACK_ID`
-- `host.getIdentity().id`
+- `host.getPackId() == PACK_ID`
+- `host.getModuleId()`
 - `host.getMeta().name`
 - `host.getStorage()`
 - `host.drawTab(imgui)`
@@ -77,7 +77,7 @@ Discovered modules render through:
 - optional `host.drawQuickContent(imgui)`
 
 The module-authored callbacks registered with Lib receive
-`drawTab(ctx)` and `drawQuickContent(ctx)`. Framework calls the full host
+`drawTab(ctx)` and `drawQuickContent(ctx)`. Framework calls the live `ModuleHost`
 methods; Lib supplies the draw context with `imgui`, author `session`, author
 `host`, and bound `widgets`.
 
@@ -90,6 +90,8 @@ Sidebar behavior:
 Coordinator bootstrap calls:
 
 ```lua
+Framework.registerCoordinator(PACK_ID, config)
+
 local ok = Framework.tryInit(PACK_ID, "My Modpack", config, #config.Profiles, defaultProfiles, {
     moduleOrder = {
         "ExampleModule",

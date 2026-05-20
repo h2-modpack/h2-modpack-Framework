@@ -23,7 +23,6 @@ Recommended coordinator shape:
 
 ```lua
 local Framework = rom.mods["adamant-ModpackFramework"]
-local lib = rom.mods["adamant-ModpackLib"]
 local config = chalk.auto("config.lua")
 local loader = reload.auto_single()
 local defaultProfiles = {}
@@ -33,7 +32,7 @@ local function renderQuickSetup(ctx)
 end
 
 local function init()
-    lib.coordinator.register(PACK_ID, config)
+    Framework.registerCoordinator(PACK_ID, config)
     local ok = Framework.tryInit(PACK_ID, "My Modpack", config, #config.Profiles, defaultProfiles, {
         moduleOrder = {
             "ExampleModule",
@@ -95,7 +94,7 @@ Framework discovers modules through Lib's live-host registry:
 
 ```lua
 -- Conceptual filter over Lib-published live hosts.
-host.getIdentity().modpack == PACK_ID
+host.getPackId() == PACK_ID
 ```
 
 Direct live-host lookup is keyed by `pluginGuid`. Framework discovery filters
@@ -103,7 +102,7 @@ the registry by prepared host identity instead of looking modules up by module
 id.
 
 Each discovered coordinated module must expose:
-- `host.getIdentity().id`
+- `host.getModuleId()`
 - `host.getMeta().name`
 - `host.getStorage()`
 - `host.drawTab(imgui)`
@@ -165,7 +164,8 @@ Coordinated module behavior reloads do not rebuild the pack. Instead:
 - discovery metadata remains static for the process
 - UI and hash paths snapshot the module's live host at the start of each operation
 
-Coordinated module structural reloads can request a pack rebuild through Lib's coordinator rebuild callback.
+Coordinated module structural reloads can request a pack rebuild through the
+callback registered with `Framework.registerCoordinator(...)`.
 If no callback is registered or the request is rejected, the module warns that a full reload is required.
 
 ## Hash and Profiles
@@ -201,7 +201,7 @@ Framework debug:
 - `config.DebugMode`
 
 Lib debug:
-- `lib.config.DebugMode`
+- `lib.createFrameworkRuntime(...).diagnostics`
 
 Framework warnings use Framework-owned logging helpers.
 

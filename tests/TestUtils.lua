@@ -3,7 +3,7 @@
 -- =============================================================================
 
 public = {}
-_PLUGIN = { guid = "test-framework" }
+_PLUGIN = { guid = "adamant-ModpackFramework" }
 
 local function deepCopy(orig)
     if type(orig) ~= "table" then return orig end
@@ -122,7 +122,7 @@ Warnings = {}
 
 function CaptureWarnings()
     Warnings = {}
-    lib.config.DebugMode = true
+    lib.createFrameworkRuntime("adamant-ModpackFramework").diagnostics.setLibDebugEnabled(true)
     _originalPrint = print
     print = function(msg)
         table.insert(Warnings, msg)
@@ -130,7 +130,7 @@ function CaptureWarnings()
 end
 
 function RestoreWarnings()
-    lib.config.DebugMode = false
+    lib.createFrameworkRuntime("adamant-ModpackFramework").diagnostics.setLibDebugEnabled(false)
     print = _originalPrint or print
     Warnings = {}
 end
@@ -138,6 +138,7 @@ end
 dofile("../adamant-ModpackLib/src/main.lua")
 lib = public
 rom.mods['adamant-ModpackLib'] = lib
+local defaultFrameworkRuntime = lib.createFrameworkRuntime("adamant-ModpackFramework")
 
 function GetRuntimeLiveHosts()
     local runtime = assert(AdamantModpackLib_Runtime, "Lib runtime missing")
@@ -176,12 +177,30 @@ LibModuleHost = setmetatable({}, {
         assert(LibTestImports["core/module_bootstrap/host.lua"], "LibModuleHost test service missing")[key] = value
     end,
 })
+local function GetLibOverlayService()
+    local bundle = assert(LibTestImports["core/overlays/overlays.lua"], "LibOverlays test bundle missing")
+    return assert(bundle.service, "LibOverlays test service missing")
+end
+
+local function GetLibOverlayState()
+    return assert(LibTestImports["core/overlays/state.lua"], "LibOverlays test state missing")
+end
+
 LibOverlays = setmetatable({}, {
     __index = function(_, key)
-        return assert(LibTestImports["core/overlays/overlays.lua"], "LibOverlays test service missing")[key]
+        local state = GetLibOverlayState()
+        if key == "uiSuppressors" or key == "nextUiSuppressorId" then
+            return state[key]
+        end
+        return GetLibOverlayService()[key]
     end,
     __newindex = function(_, key, value)
-        assert(LibTestImports["core/overlays/overlays.lua"], "LibOverlays test service missing")[key] = value
+        local state = GetLibOverlayState()
+        if key == "uiSuppressors" or key == "nextUiSuppressorId" then
+            state[key] = value
+            return
+        end
+        GetLibOverlayService()[key] = value
     end,
 })
 
@@ -254,21 +273,21 @@ function CreateFrameworkHarness(opts)
     local packInit = assert(loadfile("src/pack_init.lua", "t", env))({
         lib = harnessLib,
         rom = harnessRom,
+        frameworkPluginGuid = "adamant-ModpackFramework",
     })
 
     return {
         lib = harnessLib,
         rom = harnessRom,
         packRegistry = FrameworkPackRegistry,
+        registerCoordinator = packInit.registerCoordinator,
         init = packInit.init,
         tryInit = packInit.tryInit,
         createGuiCallbacks = packInit.createGuiCallbacks,
     }
 end
 local logging = import("logging.lua")
-local createHashGroupBuilder = import("hash_group_builder.lua", nil, {
-    lib = lib,
-})
+local createHashGroupBuilder = import("hash_group_builder.lua")
 local createModuleRegistry = import("module_registry.lua", nil, {
     lib = lib,
     rom = rom,
@@ -280,7 +299,6 @@ local createTheme = import("ui/theme.lua", nil, {
 })
 local hashCodec = import("hash_codec.lua")
 local createConfigHash = import("config_hash.lua", nil, {
-    lib = lib,
     rom = rom,
     hashCodec = hashCodec,
     createHashGroupBuilder = createHashGroupBuilder,
@@ -295,12 +313,57 @@ local createUI = import("ui.lua", nil, {
     logging = logging,
 })
 
-rawset(FrameworkTestApi, "createHashGroupBuilder", createHashGroupBuilder)
-rawset(FrameworkTestApi, "createModuleRegistry", createModuleRegistry)
+local function createDefaultFrameworkRuntime()
+    return {
+        diagnostics = defaultFrameworkRuntime.diagnostics,
+        hashing = defaultFrameworkRuntime.hashing,
+        modules = defaultFrameworkRuntime.modules,
+        overlays = {
+            order = {
+                framework = 0,
+                module = 1000,
+                debug = 2000,
+            },
+            define = function()
+                return true
+            end,
+        },
+        ui = {
+            suppressOverlays = function()
+                return {
+                    release = function() end,
+                }
+            end,
+            areOverlaysSuppressed = function()
+                return false
+            end,
+        },
+    }
+end
+
+local function createTestUI(moduleRegistry, hud, theme, config, packId, windowTitle, numProfiles,
+                            defaultProfiles, renderQuickSetup, auditSavedProfiles, frameworkRuntime)
+    return createUI(moduleRegistry, hud, theme, config, packId, windowTitle, numProfiles, defaultProfiles,
+        renderQuickSetup, auditSavedProfiles, frameworkRuntime or createDefaultFrameworkRuntime())
+end
+
+local function createTestHud(packId, packIndex, configHash, theme, config, hideHashMarker, frameworkRuntime)
+    return createHud(packId, packIndex, configHash, theme, config, hideHashMarker,
+        frameworkRuntime or createDefaultFrameworkRuntime())
+end
+
+rawset(FrameworkTestApi, "createHashGroupBuilder", function(hashing)
+    return createHashGroupBuilder(hashing or defaultFrameworkRuntime.hashing)
+end)
+rawset(FrameworkTestApi, "createModuleRegistry", function(packId, testConfig, frameworkRuntime)
+    return createModuleRegistry(packId, testConfig, frameworkRuntime or createDefaultFrameworkRuntime())
+end)
 rawset(FrameworkTestApi, "createTheme", createTheme)
-rawset(FrameworkTestApi, "createConfigHash", createConfigHash)
-rawset(FrameworkTestApi, "createHud", createHud)
-rawset(FrameworkTestApi, "createUI", createUI)
+rawset(FrameworkTestApi, "createConfigHash", function(moduleRegistry, testConfig, packId, hashing)
+    return createConfigHash(moduleRegistry, testConfig, packId, hashing or defaultFrameworkRuntime.hashing)
+end)
+rawset(FrameworkTestApi, "createHud", createTestHud)
+rawset(FrameworkTestApi, "createUI", createTestUI)
 rawset(FrameworkTestApi, "logging", logging)
 rawset(FrameworkTestApi, "createUIRuntime", function(ctx)
     local runtimeCtx = {}
@@ -312,13 +375,14 @@ rawset(FrameworkTestApi, "createUIRuntime", function(ctx)
     return import("ui/runtime.lua", nil, runtimeCtx)
 end)
 local profileTools = import("profiles.lua", nil, {
-    lib = lib,
     hashCodec = hashCodec,
     createHashGroupBuilder = createHashGroupBuilder,
     logging = logging,
 })
 rawset(FrameworkTestApi, "normalizeProfiles", profileTools.normalizeProfiles)
-rawset(FrameworkTestApi, "auditSavedProfiles", profileTools.auditSavedProfiles)
+rawset(FrameworkTestApi, "auditSavedProfiles", function(packId, profileSlots, moduleRegistry, hashing)
+    return profileTools.auditSavedProfiles(packId, profileSlots, moduleRegistry, hashing or defaultFrameworkRuntime.hashing)
+end)
 
 config = { ModEnabled = true, DebugMode = false }
 
@@ -389,8 +453,10 @@ function MockModuleRegistry.create(moduleDefs)
             session = session,
             drawTab = def.DrawTab or function() end,
             drawQuickContent = def.DrawQuickContent,
-            registerPatchMutation = def.patchPlan,
         })
+        if def.patchPlan ~= nil then
+            authorHost.mutation.patch(def.patchPlan)
+        end
         authorHost.tryActivate()
         local module = {
             pluginGuid = pluginGuid,
@@ -432,7 +498,7 @@ function MockModuleRegistry.create(moduleDefs)
         }
 
         for _, module in ipairs(moduleRegistry.modules) do
-            local liveHost = lib.getLiveModuleHost(module.pluginGuid)
+            local liveHost = defaultFrameworkRuntime.modules.getLiveHost(module.pluginGuid)
             snapshot.hosts[module] = liveHost or false
         end
 
@@ -440,7 +506,7 @@ function MockModuleRegistry.create(moduleDefs)
     end
 
     function moduleRegistry.live.getHost(entry)
-        return lib.getLiveModuleHost(entry.pluginGuid)
+        return defaultFrameworkRuntime.modules.getLiveHost(entry.pluginGuid)
     end
 
     function moduleRegistry.snapshot.getHost(entry, snapshot)

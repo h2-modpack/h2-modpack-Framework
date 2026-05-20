@@ -1,6 +1,7 @@
 local deps = ...
 local lib = deps.lib
 local rom = deps.rom
+local frameworkPluginGuid = deps.frameworkPluginGuid
 
 local logging = import "logging.lua"
 local hashCodec = import "hash_codec.lua"
@@ -13,25 +14,19 @@ local createModuleRegistry = import("module_registry.lua", nil, {
     rom = rom,
     logging = logging,
 })
-local createHashGroupBuilder = import("hash_group_builder.lua", nil, {
-    lib = lib,
-})
+local createHashGroupBuilder = import("hash_group_builder.lua")
 local profileTools = import("profiles.lua", nil, {
-    lib = lib,
     hashCodec = hashCodec,
     createHashGroupBuilder = createHashGroupBuilder,
     logging = logging,
 })
 local createConfigHash = import("config_hash.lua", nil, {
-    lib = lib,
     rom = rom,
     hashCodec = hashCodec,
     createHashGroupBuilder = createHashGroupBuilder,
     logging = logging,
 })
-local createHud = import("hud.lua", nil, {
-    lib = lib,
-})
+local createHud = import("hud.lua")
 local createUI = import("ui.lua", nil, {
     lib = lib,
     rom = rom,
@@ -45,6 +40,8 @@ local bootConstructors = {
     createUI = createUI,
     createTheme = createTheme,
 }
+
+local frameworkRuntime = nil
 
 local function disposePack(pack)
     local packUi = pack and pack.ui
@@ -92,32 +89,93 @@ local function ValidateRuntimePrerequisites()
         "Framework.init: rom.ImGui is not ready; call Framework.init after game load")
     assert(rom.game and type(rom.game.SetupRunData) == "function",
         "Framework.init: rom.game.SetupRunData is not ready; call Framework.init after game load")
-    assert(lib and lib.overlays and type(lib.overlays.defineSystem) == "function",
-        "Framework.init: adamant-ModpackLib overlays are not available")
+    assert(lib and type(lib.createFrameworkRuntime) == "function",
+        "Framework.init: adamant-ModpackLib framework runtime is not available")
+    assert(type(frameworkPluginGuid) == "string" and frameworkPluginGuid ~= "",
+        "Framework.init: frameworkPluginGuid must be a non-empty string")
+end
+
+local function ValidateCoordinatorArgs(packId, config, rebuildCallback)
+    assert(type(packId) == "string" and packId ~= "",
+        "Framework.registerCoordinator: packId must be a non-empty string")
+    assert(config == nil or type(config) == "table",
+        "Framework.registerCoordinator: config must be a table when provided")
+    assert(config == nil or type(config.ModEnabled) == "boolean",
+        "Framework.registerCoordinator: config.ModEnabled must be a boolean")
+    assert(rebuildCallback == nil or type(rebuildCallback) == "function",
+        "Framework.registerCoordinator: rebuildCallback must be a function when provided")
+end
+
+local function GetFrameworkRuntime()
+    if frameworkRuntime ~= nil then
+        return frameworkRuntime
+    end
+
+    frameworkRuntime = lib.createFrameworkRuntime(frameworkPluginGuid)
+    assert(type(frameworkRuntime) == "table"
+        and type(frameworkRuntime.diagnostics) == "table"
+        and type(frameworkRuntime.diagnostics.isLibDebugEnabled) == "function"
+        and type(frameworkRuntime.diagnostics.setLibDebugEnabled) == "function"
+        and type(frameworkRuntime.coordinator) == "table"
+        and type(frameworkRuntime.coordinator.register) == "function"
+        and type(frameworkRuntime.coordinator.registerRebuild) == "function"
+        and type(frameworkRuntime.coordinator.isRegistered) == "function"
+        and type(frameworkRuntime.modules) == "table"
+        and type(frameworkRuntime.modules.getLiveHost) == "function"
+        and type(frameworkRuntime.overlays) == "table"
+        and type(frameworkRuntime.overlays.order) == "table"
+        and type(frameworkRuntime.overlays.define) == "function"
+        and type(frameworkRuntime.ui) == "table"
+        and type(frameworkRuntime.ui.suppressOverlays) == "function"
+        and type(frameworkRuntime.ui.areOverlaysSuppressed) == "function"
+        and type(frameworkRuntime.hashing) == "table"
+        and type(frameworkRuntime.hashing.getRoots) == "function"
+        and type(frameworkRuntime.hashing.getAliases) == "function"
+        and type(frameworkRuntime.hashing.valuesEqual) == "function"
+        and type(frameworkRuntime.hashing.getPackWidth) == "function"
+        and type(frameworkRuntime.hashing.toHash) == "function"
+        and type(frameworkRuntime.hashing.fromHash) == "function"
+        and type(frameworkRuntime.hashing.isHashTokenValid) == "function"
+        and type(frameworkRuntime.hashing.readPackedBits) == "function"
+        and type(frameworkRuntime.hashing.writePackedBits) == "function",
+        "Framework.init: adamant-ModpackLib framework runtime is not available")
+    return frameworkRuntime
+end
+
+local function registerCoordinator(packId, config, rebuildCallback)
+    ValidateCoordinatorArgs(packId, config, rebuildCallback)
+    local runtime = GetFrameworkRuntime()
+    runtime.coordinator.register(packId, config)
+    runtime.coordinator.registerRebuild(packId, rebuildCallback)
+    return true
 end
 
 local function init(packId, windowTitle, config, numProfiles, defaultProfiles, opts)
     opts = ValidateInitArgs(packId, windowTitle, config, numProfiles, defaultProfiles, opts)
-    assert(lib.coordinator.isRegistered(packId),
-        "Framework.init: coordinator must register before init; see Core/main.lua")
-
     ValidateRuntimePrerequisites()
+
+    local runtime = GetFrameworkRuntime()
+    assert(runtime.coordinator.isRegistered(packId),
+        "Framework.init: coordinator must register before init; see Core/main.lua")
 
     local existingPack = FrameworkPackRegistry.packs[packId]
     local packIndex = existingPack and existingPack._index or #FrameworkPackRegistry.packList + 1
 
-    local moduleRegistry = bootConstructors.createModuleRegistry(packId, config)
-    local configHash = bootConstructors.createConfigHash(moduleRegistry, config, packId)
+    local moduleRegistry = bootConstructors.createModuleRegistry(packId, config, runtime)
+    local configHash = bootConstructors.createConfigHash(moduleRegistry, config, packId, runtime.hashing)
     local theme = bootConstructors.createTheme()
+    local auditSavedProfiles = function(auditPackId, profileSlots, auditModuleRegistry)
+        return profileTools.auditSavedProfiles(auditPackId, profileSlots, auditModuleRegistry, runtime.hashing)
+    end
 
     moduleRegistry.refresh(opts.moduleOrder)
 
     local hud = bootConstructors.createHud(packId, packIndex, configHash, theme, config,
-        opts.hideHashMarker == true)
+        opts.hideHashMarker == true, runtime)
     local ui = bootConstructors.createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
-        numProfiles, defaultProfiles, opts.renderQuickSetup, profileTools.auditSavedProfiles)
+        numProfiles, defaultProfiles, opts.renderQuickSetup, auditSavedProfiles, runtime)
 
-    profileTools.auditSavedProfiles(packId, config.Profiles, moduleRegistry)
+    auditSavedProfiles(packId, config.Profiles, moduleRegistry)
 
     local pack = {
         moduleRegistry = moduleRegistry,
@@ -199,6 +257,7 @@ local function createGuiCallbacks(packId)
 end
 
 return {
+    registerCoordinator = registerCoordinator,
     init = init,
     tryInit = tryInit,
     createGuiCallbacks = createGuiCallbacks,

@@ -1,7 +1,4 @@
-local deps = ...
-local lib = deps.lib
-
-local function createHashGroupBuilder()
+local function createHashGroupBuilder(hashing)
     local HashGroupBuilder = {}
 
     local function EncodeGroupMemberValue(node, value)
@@ -27,7 +24,7 @@ local function createHashGroupBuilder()
 
     local function GetPreparedGroupMember(aliasNodes, alias)
         local node = aliasNodes[alias]
-        local width = node and lib.hashing.getPackWidth(node) or nil
+        local width = node and hashing.getPackWidth(node) or nil
         assert(node ~= nil and width ~= nil, "hashGroups: expected prepared hash group alias")
         return node, width
     end
@@ -40,7 +37,7 @@ local function createHashGroupBuilder()
         local packedDefault = 0
         for _, member in ipairs(members) do
             local encoded = EncodeGroupMemberValue(member.node, member.node.default)
-            packedDefault = lib.hashing.writePackedBits(packedDefault, member.offset, member.width, encoded)
+            packedDefault = hashing.writePackedBits(packedDefault, member.offset, member.width, encoded)
             groupedAliases[member.alias] = true
         end
         table.insert(groups, {
@@ -51,7 +48,7 @@ local function createHashGroupBuilder()
     end
 
     function HashGroupBuilder.build(storage, hashHints)
-        local aliasNodes = lib.hashing.getAliases(storage)
+        local aliasNodes = hashing.getAliases(storage)
         local groups = {}
         local groupedAliases = {}
 

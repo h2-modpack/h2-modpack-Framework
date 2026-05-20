@@ -2,24 +2,21 @@
 -- so UI/runtime work can tolerate hot-replaced hosts safely.
 
 local deps = ...
-local lib = deps.lib
 local rom = deps.rom
 local logging = deps.logging
 
-local function createModuleRegistry(packId, config)
+local function createModuleRegistry(packId, config, frameworkRuntime)
     local ModuleRegistry = {}
     local warnedMissingHosts = {}
+    local modules = assert(frameworkRuntime and frameworkRuntime.modules,
+        "module_registry: framework runtime modules are required")
 
     local function GetHost(pluginGuid)
-        return lib.getLiveModuleHost(pluginGuid)
+        return modules.getLiveHost(pluginGuid)
     end
 
     local function ReadStorage(host)
         return host.getStorage()
-    end
-
-    local function ReadIdentity(host)
-        return host.getIdentity()
     end
 
     local function ReadMeta(host)
@@ -65,23 +62,23 @@ local function createModuleRegistry(packId, config)
     end
 
     local function BuildEntry(found)
-        local identity = found.identity
         local meta = found.meta
+        local moduleId = found.moduleId
 
         return {
             pluginGuid = found.pluginGuid,
             mod = found.mod,
-            id = identity.id,
-            modpack = identity.modpack,
-            name = meta.name or identity.id,
+            id = moduleId,
+            modpack = found.packId,
+            name = meta.name or moduleId,
             shortName = meta.shortName,
             tooltip = meta.tooltip or "",
             affectsRunData = found.affectsRunData,
             hashHints = found.hashHints,
             storage = found.storage,
-            _enableLabel = "Enable " .. tostring(meta.name or identity.id or found.pluginGuid),
-            _debugLabel = tostring(meta.name or identity.id or found.pluginGuid)
-                .. "##" .. tostring(identity.id or found.pluginGuid),
+            _enableLabel = "Enable " .. tostring(meta.name or moduleId or found.pluginGuid),
+            _debugLabel = tostring(meta.name or moduleId or found.pluginGuid)
+                .. "##" .. tostring(moduleId or found.pluginGuid),
         }
     end
 
@@ -102,14 +99,15 @@ local function createModuleRegistry(packId, config)
         for pluginGuid, mod in pairs(rom.mods) do
             local host = GetHost(pluginGuid)
             if host then
-                local identity = ReadIdentity(host)
-                if identity.modpack == packId then
+                local hostPackId = host.getPackId()
+                if hostPackId == packId then
                     table.insert(found, {
                         pluginGuid = pluginGuid,
                         mod = mod,
                         host = host,
                         storage = ReadStorage(host),
-                        identity = identity,
+                        moduleId = host.getModuleId(),
+                        packId = hostPackId,
                         meta = ReadMeta(host),
                         hashHints = ReadHashHints(host),
                         affectsRunData = ReadAffectsRunData(host),
@@ -119,15 +117,15 @@ local function createModuleRegistry(packId, config)
         end
 
         table.sort(found, function(a, b)
-            local aName = a.meta.name or a.identity.id or a.pluginGuid
-            local bName = b.meta.name or b.identity.id or b.pluginGuid
+            local aName = a.meta.name or a.moduleId or a.pluginGuid
+            local bName = b.meta.name or b.moduleId or b.pluginGuid
             return aName < bName
         end)
 
         local duplicateNamespaces = {}
         local namespaceEntries = {}
         for _, entry in ipairs(found) do
-            local namespace = entry.identity.id
+            local namespace = entry.moduleId
             if namespace ~= nil then
                 namespaceEntries[namespace] = namespaceEntries[namespace] or {}
                 table.insert(namespaceEntries[namespace], entry.pluginGuid)
@@ -153,7 +151,7 @@ local function createModuleRegistry(packId, config)
         for _, foundModule in ipairs(found) do
             local pluginGuid = foundModule.pluginGuid
             local host = foundModule.host
-            local id = foundModule.identity.id
+            local id = foundModule.moduleId
             local name = foundModule.meta.name
             local hasQuickContent = host and type(host.drawQuickContent) == "function"
 

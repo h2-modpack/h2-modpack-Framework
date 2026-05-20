@@ -57,14 +57,13 @@ local data = import("mods/data.lua")
 local logic = import("mods/logic.lua").bind(data)
 local ui = import("mods/ui.lua").bind(data)
 
-local host = lib.tryCreateModule({
+local host, store = lib.tryCreateModule({
     pluginGuid = PLUGIN_GUID,
     config = config,
     modpack = PACK_ID,
     id = MODULE_ID,
     name = "Example Module",
     storage = data.buildStorage(),
-    registerHooks = logic.registerHooks,
     drawTab = ui.drawTab,
     drawQuickContent = ui.drawQuickContent,
 })
@@ -72,6 +71,7 @@ if not host then
     return
 end
 
+logic.registerHooks(host, store)
 local ok = host.tryActivate()
 if not ok then
     return
