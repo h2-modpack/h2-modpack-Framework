@@ -9,7 +9,7 @@ local function createModuleRegistry(packId, config, frameworkRuntime)
     local ModuleRegistry = {}
     local warnedMissingHosts = {}
     local modules = assert(frameworkRuntime and frameworkRuntime.modules,
-        "module_registry: framework runtime modules are required")
+        "core/modules/registry: framework runtime modules are required")
 
     local function GetHost(pluginGuid)
         return modules.getLiveHost(pluginGuid)

@@ -5,13 +5,13 @@ local logging = deps.logging
 local profiles = {}
 
 function profiles.normalizeProfiles(profileSlots, numProfiles)
-    assert(type(profileSlots) == "table", "Framework.init: config.Profiles must be a table")
+    assert(type(profileSlots) == "table", "Framework.createPack: config.Profiles must be a table")
 
     for i = 1, numProfiles do
         local profile = profileSlots[i]
         assert(type(profile) == "table",
             string.format(
-                "Framework.init: config.Profiles[%d] is missing; ensure config.lua declares all %d profile entries",
+                "Framework.createPack: config.Profiles[%d] is missing; ensure config.lua declares all %d profile entries",
                 i, numProfiles))
         profile.Name = profile.Name ~= nil and tostring(profile.Name) or ""
         profile.Hash = profile.Hash ~= nil and tostring(profile.Hash) or ""

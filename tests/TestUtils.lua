@@ -250,11 +250,11 @@ local function mapConstructorOverrides(constructors)
     constructors = constructors or {}
     local importOverrides = {}
     local constructorPaths = {
-        createModuleRegistry = "module_registry.lua",
-        createConfigHash = "config_hash.lua",
-        createHud = "hud.lua",
-        createUI = "ui.lua",
-        createTheme = "ui/theme.lua",
+        createModuleRegistry = "core/modules/registry.lua",
+        createConfigHash = "core/hash/config_hash.lua",
+        createHud = "core/hud/runtime.lua",
+        createUI = "core/ui/window.lua",
+        createTheme = "core/ui/theme.lua",
     }
 
     for name, path in pairs(constructorPaths) do
@@ -271,7 +271,7 @@ function CreateFrameworkHarness(opts)
     local harnessLib = opts.lib or lib
     local harnessRom = opts.rom or rom
     local env = makeFrameworkImportEnv(mapConstructorOverrides(opts.constructors))
-    local packInit = assert(loadfile("src/pack_init.lua", "t", env))({
+    local frameworkCore = assert(loadfile("src/core/init.lua", "t", env))({
         lib = harnessLib,
         rom = harnessRom,
         frameworkPluginGuid = "adamant-ModpackFramework",
@@ -281,34 +281,34 @@ function CreateFrameworkHarness(opts)
         lib = harnessLib,
         rom = harnessRom,
         packRegistry = FrameworkPackRegistry,
-        registerCoordinator = packInit.registerCoordinator,
-        init = packInit.init,
-        tryInit = packInit.tryInit,
-        createGuiCallbacks = packInit.createGuiCallbacks,
+        registerCoordinator = frameworkCore.registerCoordinator,
+        createPack = frameworkCore.createPack,
+        createPackOrThrow = frameworkCore.createPackOrThrow,
+        createGuiCallbacks = frameworkCore.createGuiCallbacks,
     }
 end
-local logging = import("logging.lua")
-local createHashGroupBuilder = import("hash_group_builder.lua")
-local createModuleRegistry = import("module_registry.lua", nil, {
+local logging = import("core/logging.lua")
+local createHashGroupBuilder = import("core/hash/group_builder.lua")
+local createModuleRegistry = import("core/modules/registry.lua", nil, {
     lib = lib,
     rom = rom,
     logging = logging,
 })
-local createTheme = import("ui/theme.lua", nil, {
+local createTheme = import("core/ui/theme.lua", nil, {
     lib = lib,
     rom = rom,
 })
-local hashCodec = import("hash_codec.lua")
-local createConfigHash = import("config_hash.lua", nil, {
+local hashCodec = import("core/hash/codec.lua")
+local createConfigHash = import("core/hash/config_hash.lua", nil, {
     rom = rom,
     hashCodec = hashCodec,
     createHashGroupBuilder = createHashGroupBuilder,
     logging = logging,
 })
-local createHud = import("hud.lua", nil, {
+local createHud = import("core/hud/runtime.lua", nil, {
     lib = lib,
 })
-local createUI = import("ui.lua", nil, {
+local createUI = import("core/ui/window.lua", nil, {
     lib = lib,
     rom = rom,
     logging = logging,
@@ -373,9 +373,9 @@ rawset(FrameworkTestApi, "createUIRuntime", function(ctx)
     end
     runtimeCtx.lib = runtimeCtx.lib or lib
     runtimeCtx.rom = runtimeCtx.rom or rom
-    return import("ui/runtime.lua", nil, runtimeCtx)
+    return import("core/ui/runtime.lua", nil, runtimeCtx)
 end)
-local profileTools = import("profiles.lua", nil, {
+local profileTools = import("core/profiles/audit.lua", nil, {
     hashCodec = hashCodec,
     createHashGroupBuilder = createHashGroupBuilder,
     logging = logging,

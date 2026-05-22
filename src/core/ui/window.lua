@@ -61,7 +61,7 @@ local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
         end
     end
 
-    local runtime = import("ui/runtime.lua", nil, {
+    local runtime = import("core/ui/runtime.lua", nil, {
         rom = rom,
         moduleRegistry = moduleRegistry,
         hud = hud,
@@ -79,7 +79,7 @@ local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
         end,
     })
 
-    profiles = import("ui/profiles.lua", nil, {
+    profiles = import("core/ui/profiles.lua", nil, {
         rom = rom,
         config = config,
         colors = colors,
@@ -91,7 +91,7 @@ local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
         auditSavedProfiles = auditSavedProfiles,
     })
 
-    local drawQuickSetup = import("ui/quick_setup.lua", nil, {
+    local drawQuickSetup = import("core/ui/quick_setup.lua", nil, {
         rom = rom,
         drawPackQuickContent = drawPackQuickContent,
         theme = theme,
@@ -102,14 +102,14 @@ local function createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
         colors = colors,
     })
 
-    local drawModuleTab = import("ui/module_tabs.lua", nil, {
+    local drawModuleTab = import("core/ui/module_tabs.lua", nil, {
         rom = rom,
         staging = staging,
         runtime = runtime,
         snapshotAccess = snapshotAccess,
     })
 
-    local drawDev = import("ui/dev.lua", nil, {
+    local drawDev = import("core/ui/dev.lua", nil, {
         rom = rom,
         config = config,
         colors = colors,

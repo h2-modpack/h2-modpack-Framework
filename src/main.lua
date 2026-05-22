@@ -10,13 +10,12 @@ FrameworkPackRegistry = FrameworkPackRegistry or {}
 FrameworkPackRegistry.packs = FrameworkPackRegistry.packs or {}
 FrameworkPackRegistry.packList = FrameworkPackRegistry.packList or {}
 
-local packInit = import("pack_init.lua", nil, {
+local core = import("core/init.lua", nil, {
     lib = lib,
     rom = rom,
     frameworkPluginGuid = FRAMEWORK_PLUGIN_GUID,
 })
 
-public.init = packInit.init
-public.tryInit = packInit.tryInit
-public.registerCoordinator = packInit.registerCoordinator
-public.createGuiCallbacks = packInit.createGuiCallbacks
+public.createPack = core.createPack
+public.registerCoordinator = core.registerCoordinator
+public.createGuiCallbacks = core.createGuiCallbacks

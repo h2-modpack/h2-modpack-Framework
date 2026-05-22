@@ -46,7 +46,7 @@ local function draw(quickList, snapshot)
             TextColored(ui, colors.info, entry.name or entry.id)
             ui.Spacing()
             host.drawQuickContent()
-            runtime.commitEntrySession(entry, snapshot)
+            runtime.commitEntryState(entry, snapshot)
         end
         ::continue::
     end

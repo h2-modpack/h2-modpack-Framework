@@ -20,7 +20,7 @@ Quick Setup renders in this order:
 2. coordinator-owned content from `opts.drawPackQuickContent(ctx)`
 3. each discovered enabled module with quick content support
 
-This happens inside [`src/ui.lua`](src/ui.lua).
+This happens inside [`src/core/ui/quick_setup.lua`](src/core/ui/quick_setup.lua).
 
 ## Coordinator Quick Content
 
@@ -31,7 +31,7 @@ local function drawPackQuickContent(ctx)
     ...
 end
 
-Framework.tryInit(PACK_ID, "My Modpack", config, #config.Profiles, defaultProfiles, {
+Framework.createPack(PACK_ID, "My Modpack", config, #config.Profiles, defaultProfiles, {
     drawPackQuickContent = drawPackQuickContent,
 })
 ```
@@ -82,7 +82,7 @@ Framework behavior:
 - only enabled modules render their quick content
 - Framework snapshots live module hosts at the start of the UI operation
 - module quick content is called through that snapshot host's `drawQuickContent()`
-- the draw callback receives `draw, data, actions, services`; `draw` contains
+- the draw callback receives `draw, state, actions, services`; `draw` contains
   `imgui`, `widgets`, and `nav`
 - if the module dirty-stages persisted state during quick content, Framework commits it after draw
 

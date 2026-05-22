@@ -33,7 +33,7 @@ end
 
 local function init()
     Framework.registerCoordinator(PACK_ID, config)
-    local ok = Framework.tryInit(PACK_ID, "My Modpack", config, #config.Profiles, defaultProfiles, {
+    local ok = Framework.createPack(PACK_ID, "My Modpack", config, #config.Profiles, defaultProfiles, {
         moduleOrder = {
             "ExampleModule",
         },
@@ -58,13 +58,10 @@ modutil.once_loaded.game(function()
 end)
 ```
 
-## `Framework.tryInit(packId, windowTitle, config, numProfiles, defaultProfiles, opts?)`
+## `Framework.createPack(packId, windowTitle, config, numProfiles, defaultProfiles, opts?)`
 
-Coordinator mods should call `Framework.tryInit(...)`. It logs initialization
+Coordinator mods should call `Framework.createPack(...)`. It logs creation
 failures and skips publishing the pack when construction fails.
-
-`Framework.init(...)` is the strict variant. It has the same arguments, returns
-the pack runtime on success, and raises on failure.
 
 ## Init Arguments
 
@@ -110,14 +107,14 @@ Each discovered coordinated module must expose:
 `host.drawQuickContent()` is optional.
 
 These are full Lib host methods. The module-authored callbacks registered with
-Lib receive the author surfaces as `drawTab(draw, data, actions, services)` and
-`drawQuickContent(draw, data, actions, services)`. The draw object contains `imgui`,
+Lib receive the author surfaces as `drawTab(draw, state, actions, services)` and
+`drawQuickContent(draw, state, actions, services)`. The draw object contains `imgui`,
 `widgets`, and `nav`; the other arguments provide staged data, staged actions,
 and draw-safe services.
 
 Lib owns module definition preparation and lifecycle validation before the host is published.
 Framework trusts Lib-created hosts. Activation-time mutation sync is owned by
-Lib; Framework only calls runtime transition/session methods:
+Lib; Framework only calls runtime transition/state methods:
 - `host.applyMutation()`
 - `host.revertMutation()`
 - `host.commitIfDirty()`
@@ -156,9 +153,9 @@ See [QUICK_SETUP.md](QUICK_SETUP.md).
 
 ## Reload Behavior
 
-Coordinator bootstrap normally reruns `Framework.tryInit(...)` from the reload body.
+Coordinator bootstrap normally reruns `Framework.createPack(...)` from the reload body.
 
-The coordinator owns init arguments and re-calls `Framework.tryInit(...)` when the coordinator/framework layer reloads.
+The coordinator owns init arguments and re-calls `Framework.createPack(...)` when the coordinator/framework layer reloads.
 Framework replaces pack state for the same `packId` while preserving that pack's stable HUD/index slot.
 
 Coordinated module behavior reloads do not rebuild the pack. Instead:
@@ -177,7 +174,7 @@ Hash/profile behavior is built on:
 - optional `definition.hashGroupPlan`
 
 Profile load:
-- stages decoded persisted values through each module host/session plumbing
+- stages decoded persisted values through each module host/state plumbing
 - flushes staged managed values to config
 - reapplies enabled/runtime state
 - rolls the operation back on failure
@@ -189,7 +186,7 @@ Compatibility-sensitive details are documented in [HASH_PROFILE_ABI.md](HASH_PRO
 Framework-owned operations are transactional when practical:
 - per-entry enable/disable
 - coordinator master `ModEnabled` toggle
-- managed `session` commit
+- managed staged-state commit
 - profile/hash load
 
 The intended outcome is:

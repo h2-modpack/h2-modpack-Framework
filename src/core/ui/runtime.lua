@@ -229,7 +229,7 @@ local function createUIRuntime()
         return false
     end
 
-    function Runtime.commitEntrySession(entry, snapshot)
+    function Runtime.commitEntryState(entry, snapshot)
         local host = snapshotAccess.getHost(entry, snapshot)
         if not host then
             return
@@ -240,13 +240,13 @@ local function createUIRuntime()
             Runtime.finishUiChange(entry)
         elseif ok == false then
             logging.warn(packId,
-                "%s session commit failed; restored previous config where possible: %s",
+                "%s state commit failed; restored previous config where possible: %s",
                 tostring(entry.name or entry.id or entry.pluginGuid or "module"),
                 tostring(err))
         end
     end
 
-    function Runtime.resyncAllSessions()
+    function Runtime.resyncAllState()
         local snapshot = snapshotAccess.capture()
         for _, entry in ipairs(moduleRegistry.modules) do
             local host = snapshotAccess.getHost(entry, snapshot)

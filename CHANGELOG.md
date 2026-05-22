@@ -8,21 +8,24 @@
 - Updated hash/profile ABI docs for direct alias-owned managed storage keys.
 - Framework now treats Lib-injected `Enabled` storage as the module-level hash key while excluding `DebugMode` and non-hash storage from hash/profile output.
 - Coordinators now register pack metadata through `Framework.registerCoordinator(...)` instead of calling Lib coordinator APIs directly.
+- `Framework.createPack(...)` is now the only public pack construction entrypoint; the prior split strict/safe construction surfaces were retired.
+- GUI registration now uses stable callbacks from `Framework.createGuiCallbacks(packId)` so coordinator code owns the ROM GUI callsite.
+- Framework implementation files now live under `src/core/...`; root `src/main.lua` only assembles the public surface.
 
 ## [1.1.0] - 2026-05-05
 
 ### Added
 
-- Added a LuaLS public definition file at `src/def.lua` for the Framework module export, init contract, theme data, Quick Setup context, and pack runtime.
-- Added `Framework.registerGui(packId)` as the supported GUI registration entrypoint for coordinator mods.
+- Added a LuaLS public definition file at `src/def.lua` for the Framework module export, pack creation contract, theme data, Quick Setup context, and pack runtime.
+- Added `Framework.createGuiCallbacks(packId)` as the supported GUI callback entrypoint for coordinator mods.
 - Added `definition.hashGroupPlan` support through a dedicated hash-group builder for compact grouped hash/profile encoding.
 - Added saved-profile auditing during framework initialization and from the Profiles tab.
 - Added player-facing `THUNDERSTORE_README.md` packaging support.
 
 ### Changed
 
-- `Framework.init(...)` now uses positional required arguments plus an optional `opts` table instead of nested `params.def`.
-- Framework pack state now persists on `AdamantModpackFramework_Internal`, so repeated coordinator/framework reloads replace pack state without duplicating pack slots.
+- `Framework.createPack(...)` now uses positional required arguments plus an optional `opts` table instead of nested `params.def`.
+- Framework pack state now persists on `FrameworkPackRegistry`, so repeated coordinator/framework reloads replace pack state without duplicating pack slots.
 - Framework discovery now resolves modules through Lib's live-host registry instead of reading module public globals directly.
 - UI and hash operations now snapshot current module hosts at operation start, so ordinary module behavior reloads can update through Lib-published hosts without rediscovery.
 - Coordinated packs can rebuild when a coordinated module republishes a structurally changed host and Lib requests a coordinator rebuild.
@@ -44,14 +47,14 @@
 - Fixed profile/hash apply failures to restore prior config/runtime state where possible.
 - Fixed master pack and module batch toggles to roll back touched runtime state on failure.
 - Fixed HUD refresh callback stacking across Framework reloads.
-- Fixed stale UI state seams by routing Profiles, Quick Setup, and module tabs through explicit runtime/session flows.
+- Fixed stale UI state seams by routing Profiles, Quick Setup, and module tabs through explicit runtime/state flows.
 
 ### Documentation
 
 - Rewrote coordinator docs around the supported bootstrap contract:
-  - coordinator registration before `Framework.init(...)`
-  - `Framework.registerGui(PACK_ID)` for GUI callback registration
-  - positional `Framework.init(...)` arguments plus optional `opts`
+  - coordinator registration before `Framework.createPack(...)`
+  - `Framework.createGuiCallbacks(PACK_ID)` for GUI callback registration
+  - positional `Framework.createPack(...)` arguments plus optional `opts`
   - Lib-host discovery and snapshot-host runtime behavior
 - Expanded `HASH_PROFILE_ABI.md` with hash/profile invariants, token escaping, decode behavior, and shipped-module compatibility rules.
 - Updated Quick Setup docs for coordinator-owned `opts.drawPackQuickContent(ctx)` and module-host quick content.

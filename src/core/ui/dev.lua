@@ -39,8 +39,8 @@ local function draw(snapshot)
         "Print lib-internal diagnostic warnings (schema errors, unknown field types). Shared across all packs.")
     end
 
-    if ui.Button("Resync Sessions") then
-        runtime.resyncAllSessions()
+    if ui.Button("Resync State") then
+        runtime.resyncAllState()
     end
 
     TextColored(ui, colors.info, "Per-Module Debug")

@@ -2,7 +2,7 @@
 --- @param packId string Pack identifier used for component naming.
 --- @param packIndex number Stable vertical stacking index for this pack.
 --- @param configHash table Config-hash subsystem returned by `createConfigHash(...)`.
---- @param theme table Theme object returned by `ui/theme.lua`.
+--- @param theme table Theme object returned by `core/ui/theme.lua`.
 --- @param config table Coordinator config table containing `ModEnabled`.
 --- @param hideHashMarker boolean|nil Optional pack-level flag to suppress the HUD fingerprint marker.
 --- @param frameworkRuntime table Framework runtime returned by Lib.
@@ -11,7 +11,7 @@ local function createHud(packId, packIndex, configHash, theme, config, hideHashM
     assert(type(frameworkRuntime) == "table"
         and type(frameworkRuntime.overlays) == "table"
         and type(frameworkRuntime.overlays.define) == "function",
-        "Framework.init: adamant-ModpackLib framework overlays are not available")
+        "Framework.createPack: adamant-ModpackLib framework overlays are not available")
 
     local componentName = "ModpackMark_" .. packId
 

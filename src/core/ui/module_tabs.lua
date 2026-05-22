@@ -13,7 +13,7 @@ local function drawEntryBody(entry, snapshot)
 
     host.drawTab()
 
-    runtime.commitEntrySession(entry, snapshot)
+    runtime.commitEntryState(entry, snapshot)
 end
 
 local function draw(entry, snapshot)

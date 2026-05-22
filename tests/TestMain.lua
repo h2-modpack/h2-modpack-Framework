@@ -242,7 +242,7 @@ function TestMain:testInitLeavesStartupMutationSyncToHostActivation()
         end,
         },
     })
-    harness.init(
+    harness.createPackOrThrow(
         "startup-pack",
         "Startup Pack",
         {
@@ -352,7 +352,7 @@ function TestMain:testModuleActivationOwnsStartupSyncBeforeFrameworkInit()
         end,
         },
     })
-    harness.init(
+    harness.createPackOrThrow(
         packId,
         "Load Order Pack",
         {
@@ -440,8 +440,8 @@ function TestMain:testRepeatedInitReplacesPackStateAndKeepsStablePackIndex()
             { Name = "", Hash = "", Tooltip = "" },
         },
     }
-    firstPack = harness.init(packId, "Reinit Pack", config, 1, {})
-    secondPack = harness.init(packId, "Reinit Pack", config, 1, {})
+    firstPack = harness.createPackOrThrow(packId, "Reinit Pack", config, 1, {})
+    secondPack = harness.createPackOrThrow(packId, "Reinit Pack", config, 1, {})
 
     local packIdCount = 0
     for _, value in ipairs(packRegistry.packList) do
@@ -583,9 +583,9 @@ function TestMain:testRepeatedInitDisposesPreviousOpenUiSuppression()
             { Name = "", Hash = "", Tooltip = "" },
         },
     }
-    local firstPack = harness.init(packId, "Reinit Dispose Pack", config, 1, {})
+    local firstPack = harness.createPackOrThrow(packId, "Reinit Dispose Pack", config, 1, {})
     firstPack.ui.addMenuBar()
-    local secondPack = harness.init(packId, "Reinit Dispose Pack", config, 1, {})
+    local secondPack = harness.createPackOrThrow(packId, "Reinit Dispose Pack", config, 1, {})
     local releaseCallsAfterReinit = releaseCalls
     local flushCallsAfterReinit = flushCalls
     firstPack.ui.addMenuBar()
@@ -666,7 +666,7 @@ function TestMain:testFailedInitDoesNotRegisterPack()
         },
     }
     lu.assertErrorMsgContains("ui construction boom", function()
-        harness.init(packId, "Failed Init Pack", config, 1, {})
+        harness.createPackOrThrow(packId, "Failed Init Pack", config, 1, {})
     end)
 
     local packIdCount = 0
@@ -736,7 +736,7 @@ function TestMain:testTryInitReturnsPackOnSuccess()
         end,
         },
     })
-    ok, pack, err = harness.tryInit(packId, "Try Init Pack", {
+    ok, pack, err = harness.createPack(packId, "Create Pack", {
         ModEnabled = true,
         DebugMode = false,
         Profiles = {
@@ -756,7 +756,7 @@ end
 function TestMain:testTryInitReturnsErrorAndDoesNotRegisterPack()
     CaptureWarnings()
 
-    local packId = "try-init-fail-pack"
+    local packId = "create-pack-fail-pack"
     local packRegistry = FrameworkPackRegistry
     local previousPack = packRegistry.packs[packId]
     local previousPackList = {}
@@ -804,7 +804,7 @@ function TestMain:testTryInitReturnsErrorAndDoesNotRegisterPack()
         end,
         },
     })
-    ok, pack, err = harness.tryInit(packId, "Try Init Pack", {
+    ok, pack, err = harness.createPack(packId, "Create Pack", {
         ModEnabled = true,
         DebugMode = false,
         Profiles = {
@@ -832,7 +832,7 @@ function TestMain:testTryInitReturnsErrorAndDoesNotRegisterPack()
     lu.assertEquals(packIdCount, 0)
     lu.assertEquals(packRegistry.packs[packId], previousPack)
     lu.assertEquals(#warnings, 1)
-    lu.assertStrContains(warnings[1], "[try-init-fail-pack] Framework init failed; skipping pack:")
+    lu.assertStrContains(warnings[1], "[create-pack-fail-pack] Framework createPack failed; skipping pack:")
     lu.assertStrContains(warnings[1], "try init boom")
 end
 

@@ -36,7 +36,7 @@ local function createConfigHash(moduleRegistry, config, packId, hashing)
         return true, nil
     end
 
-    local function FlushManagedSessions(snapshot)
+    local function FlushManagedState(snapshot)
         for _, entry in ipairs(moduleRegistry.modules) do
             local host = moduleRegistry.snapshot.getHost(entry, snapshot)
             if host then
@@ -49,7 +49,7 @@ local function createConfigHash(moduleRegistry, config, packId, hashing)
         return true, nil
     end
 
-    local function ReloadManagedSession()
+    local function ReloadManagedState()
         local snapshot = moduleRegistry.live.captureSnapshot()
         for _, entry in ipairs(moduleRegistry.modules) do
             local host = moduleRegistry.snapshot.getHost(entry, snapshot)
@@ -129,7 +129,7 @@ local function createConfigHash(moduleRegistry, config, packId, hashing)
             end
         end
 
-        local flushOk, flushErr = FlushManagedSessions(snapshot)
+        local flushOk, flushErr = FlushManagedState(snapshot)
         if flushOk == false then
             table.insert(rollbackErrors, flushErr)
         end
@@ -387,7 +387,7 @@ local function createConfigHash(moduleRegistry, config, packId, hashing)
                 end
             end
 
-            local flushOk, flushErr = FlushManagedSessions(snapshot)
+            local flushOk, flushErr = FlushManagedState(snapshot)
             if flushOk == false then
                 return false, flushErr
             end
@@ -400,7 +400,7 @@ local function createConfigHash(moduleRegistry, config, packId, hashing)
             return FailApplyHash(snapshot, captured, writeErr)
         end
 
-        ReloadManagedSession()
+        ReloadManagedState()
 
         for _, entry in ipairs(moduleRegistry.modules) do
             local ok, err = moduleRegistry.snapshot.setEntryEnabled(entry, moduleTargets[entry], snapshot)

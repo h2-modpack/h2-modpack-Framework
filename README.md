@@ -77,10 +77,10 @@ Discovered modules render through:
 - optional `host.drawQuickContent()`
 
 The module-authored callbacks registered with Lib receive
-`drawTab(draw, data, actions, services)` and
-`drawQuickContent(draw, data, actions, services)`. Framework calls the live
+`drawTab(draw, state, actions, services)` and
+`drawQuickContent(draw, state, actions, services)`. Framework calls the live
 `ModuleHost` methods; Lib supplies the draw object with `imgui`, `widgets`, and
-`nav`, plus the author data, action, and draw-safe service surfaces.
+`nav`, plus the staged state, action, and draw-safe service surfaces.
 
 Sidebar behavior:
 
@@ -93,7 +93,7 @@ Coordinator bootstrap calls:
 ```lua
 Framework.registerCoordinator(PACK_ID, config)
 
-local ok = Framework.tryInit(PACK_ID, "My Modpack", config, #config.Profiles, defaultProfiles, {
+local ok = Framework.createPack(PACK_ID, "My Modpack", config, #config.Profiles, defaultProfiles, {
     moduleOrder = {
         "ExampleModule",
     },
@@ -104,9 +104,8 @@ if not ok then
 end
 ```
 
-`Framework.tryInit(...)` is the coordinator-safe entrypoint. It logs init failures
-and skips publishing the pack. `Framework.init(...)` is the strict variant for tests
-or callers that want errors to propagate.
+`Framework.createPack(...)` is the coordinator-safe entrypoint. It logs creation
+failures and skips publishing the pack.
 
 ## Validation
 

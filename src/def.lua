@@ -16,7 +16,7 @@ local Framework = {}
 ---@field Hash string
 ---@field Tooltip string
 
----@class AdamantModpackFramework.InitOpts
+---@class AdamantModpackFramework.PackOpts
 ---@field moduleOrder? string[] Ordered module ids to pin first in the sidebar.
 ---@field drawPackQuickContent? fun(ctx: AdamantModpackFramework.PackQuickContentContext) Coordinator-owned Quick Setup renderer.
 ---@field hideHashMarker? boolean Suppress the HUD hash marker while keeping the coordinator UI active.
@@ -73,21 +73,11 @@ end
 ---@param config AdamantModpackFramework.Config Chalk-managed coordinator config.
 ---@param numProfiles integer Number of saved profile slots to normalize and render.
 ---@param defaultProfiles table Coordinator-owned default profile data.
----@param opts? AdamantModpackFramework.InitOpts Optional coordinator setup controls.
----@return AdamantModpackFramework.PackRuntime
-function Framework.init(packId, windowTitle, config, numProfiles, defaultProfiles, opts)
-end
-
----@param packId string Stable coordinator pack id.
----@param windowTitle string Main framework window title.
----@param config AdamantModpackFramework.Config Chalk-managed coordinator config.
----@param numProfiles integer Number of saved profile slots to normalize and render.
----@param defaultProfiles table Coordinator-owned default profile data.
----@param opts? AdamantModpackFramework.InitOpts Optional coordinator setup controls.
+---@param opts? AdamantModpackFramework.PackOpts Optional coordinator setup controls.
 ---@return boolean ok
 ---@return AdamantModpackFramework.PackRuntime? pack
 ---@return string? err
-function Framework.tryInit(packId, windowTitle, config, numProfiles, defaultProfiles, opts)
+function Framework.createPack(packId, windowTitle, config, numProfiles, defaultProfiles, opts)
 end
 
 ---@param packId string Stable coordinator pack id.
