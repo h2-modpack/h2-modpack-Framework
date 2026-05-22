@@ -1,11 +1,9 @@
 local deps = ...
-local lib = deps.lib
 local rom = deps.rom
 local logging = deps.logging
 local profileTools = deps.profileTools
 local constructors = deps.constructors
-local getFrameworkRuntime = deps.getFrameworkRuntime
-local frameworkPluginGuid = deps.frameworkPluginGuid
+local frameworkRuntime = deps.frameworkRuntime
 
 local function disposePack(pack)
     local packUi = pack and pack.ui
@@ -53,10 +51,6 @@ local function ValidateRuntimePrerequisites()
         "Framework.createPack: rom.ImGui is not ready; call Framework.createPack after game load")
     assert(rom.game and type(rom.game.SetupRunData) == "function",
         "Framework.createPack: rom.game.SetupRunData is not ready; call Framework.createPack after game load")
-    assert(lib and type(lib.createFrameworkRuntime) == "function",
-        "Framework.createPack: adamant-ModpackLib framework runtime is not available")
-    assert(type(frameworkPluginGuid) == "string" and frameworkPluginGuid ~= "",
-        "Framework.createPack: frameworkPluginGuid must be a non-empty string")
 end
 
 local function ValidateCoordinatorArgs(packId, config, rebuildCallback)
@@ -72,9 +66,8 @@ end
 
 local function registerCoordinator(packId, config, rebuildCallback)
     ValidateCoordinatorArgs(packId, config, rebuildCallback)
-    local runtime = getFrameworkRuntime()
-    runtime.coordinator.register(packId, config)
-    runtime.coordinator.registerRebuild(packId, rebuildCallback)
+    frameworkRuntime.coordinator.register(packId, config)
+    frameworkRuntime.coordinator.registerRebuild(packId, rebuildCallback)
     return true
 end
 
@@ -82,26 +75,25 @@ local function createPackOrThrow(packId, windowTitle, config, numProfiles, defau
     opts = ValidateCreatePackArgs(packId, windowTitle, config, numProfiles, defaultProfiles, opts)
     ValidateRuntimePrerequisites()
 
-    local runtime = getFrameworkRuntime()
-    assert(runtime.coordinator.isRegistered(packId),
+    assert(frameworkRuntime.coordinator.isRegistered(packId),
         "Framework.createPack: coordinator must register before createPack; see Core/main.lua")
 
     local existingPack = FrameworkPackRegistry.packs[packId]
     local packIndex = existingPack and existingPack._index or #FrameworkPackRegistry.packList + 1
 
-    local moduleRegistry = constructors.createModuleRegistry(packId, config, runtime)
-    local configHash = constructors.createConfigHash(moduleRegistry, config, packId, runtime.hashing)
+    local moduleRegistry = constructors.createModuleRegistry(packId, config, frameworkRuntime)
+    local configHash = constructors.createConfigHash(moduleRegistry, config, packId, frameworkRuntime.hashing)
     local theme = constructors.createTheme()
     local auditSavedProfiles = function(auditPackId, profileSlots, auditModuleRegistry)
-        return profileTools.auditSavedProfiles(auditPackId, profileSlots, auditModuleRegistry, runtime.hashing)
+        return profileTools.auditSavedProfiles(auditPackId, profileSlots, auditModuleRegistry, frameworkRuntime.hashing)
     end
 
     moduleRegistry.refresh(opts.moduleOrder)
 
     local hud = constructors.createHud(packId, packIndex, configHash, theme, config,
-        opts.hideHashMarker == true, runtime)
+        opts.hideHashMarker == true, frameworkRuntime)
     local ui = constructors.createUI(moduleRegistry, hud, theme, config, packId, windowTitle,
-        numProfiles, defaultProfiles, opts.drawPackQuickContent, auditSavedProfiles, runtime)
+        numProfiles, defaultProfiles, opts.drawPackQuickContent, auditSavedProfiles, frameworkRuntime)
 
     auditSavedProfiles(packId, config.Profiles, moduleRegistry)
 

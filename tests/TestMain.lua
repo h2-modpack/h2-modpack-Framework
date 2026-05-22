@@ -472,44 +472,41 @@ function TestMain:testRepeatedInitDisposesPreviousOpenUiSuppression()
         previousPackList[i] = value
     end
 
-    local previousCreateFrameworkRuntime = lib.createFrameworkRuntime
     local previousImGui = rom.ImGui
     local suppressCalls = 0
     local releaseCalls = 0
     local flushCalls = 0
-    local hashing = previousCreateFrameworkRuntime("adamant-ModpackFramework").hashing
+    local frameworkRuntime = lib.createFrameworkRuntime("adamant-ModpackFramework")
+    local hashing = frameworkRuntime.hashing
 
     public.registerCoordinator(packId, {
         ModEnabled = true,
     })
-    lib.createFrameworkRuntime = function(frameworkPluginGuid)
-        local frameworkRuntime = previousCreateFrameworkRuntime(frameworkPluginGuid)
-        return {
-            diagnostics = frameworkRuntime.diagnostics,
-            coordinator = frameworkRuntime.coordinator,
-            hashing = hashing,
-            modules = frameworkRuntime.modules,
-            overlays = frameworkRuntime.overlays,
-            ui = {
-                suppressOverlays = function()
-                    suppressCalls = suppressCalls + 1
-                    local released = false
-                    return {
-                        release = function()
-                            if released then
-                                return
-                            end
-                            released = true
-                            releaseCalls = releaseCalls + 1
-                        end,
-                    }
-                end,
-                areOverlaysSuppressed = function()
-                    return suppressCalls > releaseCalls
-                end,
-            },
-        }
-    end
+    local testFrameworkRuntime = {
+        diagnostics = frameworkRuntime.diagnostics,
+        coordinator = frameworkRuntime.coordinator,
+        hashing = hashing,
+        modules = frameworkRuntime.modules,
+        overlays = frameworkRuntime.overlays,
+        ui = {
+            suppressOverlays = function()
+                suppressCalls = suppressCalls + 1
+                local released = false
+                return {
+                    release = function()
+                        if released then
+                            return
+                        end
+                        released = true
+                        releaseCalls = releaseCalls + 1
+                    end,
+                }
+            end,
+            areOverlaysSuppressed = function()
+                return suppressCalls > releaseCalls
+            end,
+        },
+    }
     rom.ImGui = {
         MenuItem = function()
             return true
@@ -517,6 +514,7 @@ function TestMain:testRepeatedInitDisposesPreviousOpenUiSuppression()
     }
 
     local harness = CreateFrameworkHarness({
+        frameworkRuntime = testFrameworkRuntime,
         constructors = {
             createModuleRegistry = function()
                 return {
@@ -595,7 +593,6 @@ function TestMain:testRepeatedInitDisposesPreviousOpenUiSuppression()
 
     local activePack = packRegistry.packs[packId]
 
-    lib.createFrameworkRuntime = previousCreateFrameworkRuntime
     rom.ImGui = previousImGui
     packRegistry.packs[packId] = previousPack
     packRegistry.packList = previousPackList

@@ -268,18 +268,17 @@ end
 
 function CreateFrameworkHarness(opts)
     opts = opts or {}
-    local harnessLib = opts.lib or lib
     local harnessRom = opts.rom or rom
+    local harnessFrameworkRuntime = opts.frameworkRuntime or defaultFrameworkRuntime
     local env = makeFrameworkImportEnv(mapConstructorOverrides(opts.constructors))
     local frameworkCore = assert(loadfile("src/core/init.lua", "t", env))({
-        lib = harnessLib,
         rom = harnessRom,
-        frameworkPluginGuid = "adamant-ModpackFramework",
+        frameworkRuntime = harnessFrameworkRuntime,
     })
 
     return {
-        lib = harnessLib,
         rom = harnessRom,
+        frameworkRuntime = harnessFrameworkRuntime,
         packRegistry = FrameworkPackRegistry,
         registerCoordinator = frameworkCore.registerCoordinator,
         createPack = frameworkCore.createPack,
@@ -290,12 +289,10 @@ end
 local logging = import("core/logging.lua")
 local createHashGroupBuilder = import("core/hash/group_builder.lua")
 local createModuleRegistry = import("core/modules/registry.lua", nil, {
-    lib = lib,
     rom = rom,
     logging = logging,
 })
 local createTheme = import("core/ui/theme.lua", nil, {
-    lib = lib,
     rom = rom,
 })
 local hashCodec = import("core/hash/codec.lua")
@@ -305,11 +302,8 @@ local createConfigHash = import("core/hash/config_hash.lua", nil, {
     createHashGroupBuilder = createHashGroupBuilder,
     logging = logging,
 })
-local createHud = import("core/hud/runtime.lua", nil, {
-    lib = lib,
-})
+local createHud = import("core/hud/runtime.lua")
 local createUI = import("core/ui/window.lua", nil, {
-    lib = lib,
     rom = rom,
     logging = logging,
 })
