@@ -2,18 +2,35 @@ local lu = require('luaunit')
 
 TestMain = {}
 
+local function snapshotTable(source)
+    local snapshot = {}
+    for key, value in pairs(source) do
+        snapshot[key] = value
+    end
+    return snapshot
+end
+
+local function replaceTableContents(target, source)
+    for key in pairs(target) do
+        target[key] = nil
+    end
+    for key, value in pairs(source) do
+        target[key] = value
+    end
+end
+
 function TestMain:setUp()
-    local overlayState = LibOverlays
-    self.previousUiSuppressors = overlayState.uiSuppressors
-    self.previousNextUiSuppressorId = overlayState.nextUiSuppressorId
-    overlayState.uiSuppressors = {}
-    overlayState.nextUiSuppressorId = 0
+    local overlays = LibOverlays
+    self.previousUiSuppressors = overlays.uiSuppressors
+    self.previousNextUiSuppressorId = overlays.nextUiSuppressorId
+    overlays.uiSuppressors = {}
+    overlays.nextUiSuppressorId = 0
 end
 
 function TestMain:tearDown()
-    local overlayState = LibOverlays
-    overlayState.uiSuppressors = self.previousUiSuppressors
-    overlayState.nextUiSuppressorId = self.previousNextUiSuppressorId
+    local overlays = LibOverlays
+    overlays.uiSuppressors = self.previousUiSuppressors
+    overlays.nextUiSuppressorId = self.previousNextUiSuppressorId
 end
 
 function TestMain:testCreateGuiCallbacksAreSafeBeforeInit()
@@ -264,15 +281,15 @@ function TestMain:testModuleActivationOwnsStartupSyncBeforeFrameworkInit()
         name = "Alpha",
         storage = {},
     })
-    local store, session = CreateModuleState({
+    local persistentState, stagedState = CreateModuleState({
         Enabled = true,
         DebugMode = false,
     }, definition)
     local host, authorHost = LibModuleHost.create({
         pluginGuid = "test-pack.Alpha",
         definition = definition,
-        store = store,
-        session = session,
+        persistentState = persistentState,
+        stagedState = stagedState,
         drawTab = function() end,
     })
     authorHost.mutation.patch(function(plan)
@@ -466,13 +483,13 @@ function TestMain:testRepeatedInitDisposesPreviousOpenUiSuppression()
         ModEnabled = true,
     })
     lib.createFrameworkRuntime = function(frameworkPluginGuid)
-        local runtime = previousCreateFrameworkRuntime(frameworkPluginGuid)
+        local frameworkRuntime = previousCreateFrameworkRuntime(frameworkPluginGuid)
         return {
-            diagnostics = runtime.diagnostics,
-            coordinator = runtime.coordinator,
+            diagnostics = frameworkRuntime.diagnostics,
+            coordinator = frameworkRuntime.coordinator,
             hashing = hashing,
-            modules = runtime.modules,
-            overlays = runtime.overlays,
+            modules = frameworkRuntime.modules,
+            overlays = frameworkRuntime.overlays,
             ui = {
                 suppressOverlays = function()
                     suppressCalls = suppressCalls + 1
@@ -1087,12 +1104,13 @@ function TestMain:testModuleBatchToggleRollsBackTouchedModulesOnFailure()
 end
 
 function TestMain:testQuickSetupRendersModuleQuickContent()
-    local previousImGui = rom.ImGui
+    local imgui = rom.ImGui
+    local previousImGui = snapshotTable(imgui)
     local checkboxLabels = {}
 
     local function noop() end
 
-    rom.ImGui = {
+    replaceTableContents(imgui, {
         Begin = function() return true, true end,
         End = noop,
         SetNextWindowSize = noop,
@@ -1140,7 +1158,7 @@ function TestMain:testQuickSetupRendersModuleQuickContent()
         PopID = noop,
         PushStyleColor = noop,
         PopStyleColor = noop,
-    }
+    })
 
     local moduleRegistry = MockModuleRegistry.create({
         {
@@ -1192,7 +1210,7 @@ function TestMain:testQuickSetupRendersModuleQuickContent()
     builtUi.addMenuBar()
     local ok, err = pcall(builtUi.renderWindow)
 
-    rom.ImGui = previousImGui
+    replaceTableContents(imgui, previousImGui)
 
     lu.assertTrue(ok, tostring(err))
     local joined = table.concat(checkboxLabels, "\n")
@@ -1313,7 +1331,7 @@ function TestMain:testQuickSetupUsesLatestLiveHostForQuickContent()
             { type = "bool", alias = "FlagA", default = false },
         },
     })
-    local store, session = CreateModuleState({
+    local persistentState, stagedState = CreateModuleState({
         Enabled = true,
         DebugMode = false,
         FlagA = false,
@@ -1321,8 +1339,8 @@ function TestMain:testQuickSetupUsesLatestLiveHostForQuickContent()
     local replacementHost, replacementAuthorHost = LibModuleHost.create({
         pluginGuid = entry.pluginGuid,
         definition = replacementDefinition,
-        store = store,
-        session = session,
+        persistentState = persistentState,
+        stagedState = stagedState,
         drawTab = function() end,
         drawQuickContent = function()
             secondQuickRenders = secondQuickRenders + 1

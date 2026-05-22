@@ -45,7 +45,7 @@ local function draw(quickList, snapshot)
             ui.Spacing()
             TextColored(ui, colors.info, entry.name or entry.id)
             ui.Spacing()
-            host.drawQuickContent(ui)
+            host.drawQuickContent()
             runtime.commitEntrySession(entry, snapshot)
         end
         ::continue::

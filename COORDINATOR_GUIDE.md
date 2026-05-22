@@ -105,14 +105,15 @@ Each discovered coordinated module must expose:
 - `host.getModuleId()`
 - `host.getMeta().name`
 - `host.getStorage()`
-- `host.drawTab(imgui)`
+- `host.drawTab()`
 
-`host.drawQuickContent(...)` is optional.
+`host.drawQuickContent()` is optional.
 
 These are full Lib host methods. The module-authored callbacks registered with
-Lib receive the author surfaces as `drawTab(draw)` and
-`drawQuickContent(draw)`. The draw object contains `imgui`, author `session`,
-author `host`, and bound `widgets` / `nav`.
+Lib receive the author surfaces as `drawTab(draw, data, actions, services)` and
+`drawQuickContent(draw, data, actions, services)`. The draw object contains `imgui`,
+`widgets`, and `nav`; the other arguments provide staged data, staged actions,
+and draw-safe services.
 
 Lib owns module definition preparation and lifecycle validation before the host is published.
 Framework trusts Lib-created hosts. Activation-time mutation sync is owned by
@@ -139,7 +140,7 @@ The sidebar is module-based: one tab per discovered module, in discovery order.
 Module tabs are simple:
 - Framework renders the enable checkbox
 - Framework snapshots live module hosts at the start of the UI operation
-- Framework calls the selected module host's `drawTab(imgui)` when enabled
+- Framework calls the selected module host's `drawTab()` when enabled
 - if staged state is dirty after draw, Framework commits it through that snapshot host's `commitIfDirty()`
 
 ## Quick Setup

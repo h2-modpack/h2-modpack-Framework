@@ -69,17 +69,18 @@ The framework discovers modules that expose:
 - `host.getModuleId()`
 - `host.getMeta().name`
 - `host.getStorage()`
-- `host.drawTab(imgui)`
+- `host.drawTab()`
 
 Discovered modules render through:
 
-- `host.drawTab(imgui)`
-- optional `host.drawQuickContent(imgui)`
+- `host.drawTab()`
+- optional `host.drawQuickContent()`
 
 The module-authored callbacks registered with Lib receive
-`drawTab(draw)` and `drawQuickContent(draw)`. Framework calls the live `ModuleHost`
-methods; Lib supplies the draw object with `imgui`, author `session`, author
-`host`, and bound `widgets` / `nav`.
+`drawTab(draw, data, actions, services)` and
+`drawQuickContent(draw, data, actions, services)`. Framework calls the live
+`ModuleHost` methods; Lib supplies the draw object with `imgui`, `widgets`, and
+`nav`, plus the author data, action, and draw-safe service surfaces.
 
 Sidebar behavior:
 

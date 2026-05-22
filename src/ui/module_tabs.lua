@@ -1,7 +1,6 @@
 local ctx = ...
 
-local rom = ctx.rom
-local ui = rom.ImGui
+local ui = ctx.rom.ImGui
 local staging = ctx.staging
 local runtime = ctx.runtime
 local snapshotAccess = ctx.snapshotAccess
@@ -12,7 +11,7 @@ local function drawEntryBody(entry, snapshot)
         return
     end
 
-    host.drawTab(ui)
+    host.drawTab()
 
     runtime.commitEntrySession(entry, snapshot)
 end

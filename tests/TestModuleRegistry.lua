@@ -25,12 +25,12 @@ local function attachModule(pluginGuid, definition, persisted, exports)
         storage = definition.storage,
         hashGroupPlan = definition.hashGroupPlan,
     })
-    local store, session = CreateModuleState(persisted or {}, definition)
+    local persistentState, stagedState = CreateModuleState(persisted or {}, definition)
     local host, authorHost = LibModuleHost.create({
         pluginGuid = pluginGuid,
         definition = definition,
-        store = store,
-        session = session,
+        persistentState = persistentState,
+        stagedState = stagedState,
         drawTab = exports.DrawTab,
         drawQuickContent = exports.DrawQuickContent,
     })
