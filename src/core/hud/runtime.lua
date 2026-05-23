@@ -21,8 +21,12 @@ local function createHud(packId, packIndex, configHash, theme, config, hideHashM
     local markerHidden = hideHashMarker == true
     local markerContext = nil
 
-    if not markerHidden then
+    local function defineOverlay()
         frameworkRuntime.overlays.define(packId, "hud", function(overlays)
+            if markerHidden then
+                return
+            end
+
             overlays.createLine("hash", {
                 componentName = componentName,
                 region = "middleRightStack",
@@ -80,6 +84,7 @@ local function createHud(packId, packIndex, configHash, theme, config, hideHashM
     end
 
     return {
+        install         = defineOverlay,
         setModMarker    = setModMarker,
         markHashDirty   = markHashDirty,
         flushPendingHash = flushPendingHash,

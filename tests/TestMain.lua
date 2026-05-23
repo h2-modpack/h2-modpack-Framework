@@ -102,6 +102,7 @@ function TestMain:testCreateHudRegistersFrameworkHashOverlay()
     }
 
     local hud = FrameworkTestApi.createHud("test-pack", 1, hash, theme, config, false, frameworkRuntime)
+    hud.install()
     hud.setModMarker(false)
 
     lu.assertEquals(registeredPack, "test-pack")
@@ -112,6 +113,50 @@ function TestMain:testCreateHudRegistersFrameworkHashOverlay()
     lu.assertEquals(projectedValue, "")
     lu.assertFalse(registeredOpts.visible())
     lu.assertEquals(refreshCalls, 2)
+end
+
+function TestMain:testCreateHudInstallClearsFrameworkHashOverlayWhenHidden()
+    local registeredPack = nil
+    local registeredScope = nil
+    local createLineCalls = 0
+    local commitCalls = 0
+
+    local frameworkRuntime = {
+        overlays = {
+            order = {
+                framework = 0,
+            },
+            define = function(packId, scope, register)
+                registeredPack = packId
+                registeredScope = scope
+                register({
+                    createLine = function()
+                        createLineCalls = createLineCalls + 1
+                    end,
+                    onCommit = function()
+                        commitCalls = commitCalls + 1
+                    end,
+                })
+                return true
+            end,
+        },
+    }
+
+    local hud = FrameworkTestApi.createHud("test-pack", 1, {
+        GetConfigHash = function()
+            return "hash", "fingerprint"
+        end,
+        ApplyConfigHash = function()
+            return true
+        end,
+    }, FrameworkTestApi.createTheme(), { ModEnabled = true }, true, frameworkRuntime)
+
+    hud.install()
+
+    lu.assertEquals(registeredPack, "test-pack")
+    lu.assertEquals(registeredScope, "hud")
+    lu.assertEquals(createLineCalls, 0)
+    lu.assertEquals(commitCalls, 0)
 end
 
 function TestMain:testRenderWindowCleansUpImguiStacksBeforeRethrow()
@@ -234,6 +279,7 @@ function TestMain:testInitLeavesStartupMutationSyncToHostActivation()
         end,
         createHud = function()
             return {
+                install = function() end,
                 setModMarker = function() end,
                 setMarkerVisible = function() end,
             }
@@ -344,6 +390,7 @@ function TestMain:testModuleActivationOwnsStartupSyncBeforeFrameworkInit()
         end,
         createHud = function()
             return {
+                install = function() end,
                 setModMarker = function() end,
                 setMarkerVisible = function() end,
             }
@@ -424,6 +471,7 @@ function TestMain:testRepeatedInitReplacesPackStateAndKeepsStablePackIndex()
         createHud = function(_, packIndex)
             table.insert(hudIndexes, packIndex)
             return {
+                install = function() end,
                 setModMarker = function() end,
                 setMarkerVisible = function() end,
             }
@@ -562,6 +610,7 @@ function TestMain:testRepeatedInitDisposesPreviousOpenUiSuppression()
             end,
             createHud = function()
                 return {
+                    install = function() end,
                     setModMarker = function() end,
                     setMarkerVisible = function() end,
                     flushPendingHash = function()
@@ -614,6 +663,7 @@ end
 function TestMain:testFailedInitDoesNotRegisterPack()
     local packId = "failed-init-pack"
     local packRegistry = FrameworkPackRegistry
+    local hudInstallCalls = 0
     local previousPack = packRegistry.packs[packId]
     local previousPackList = {}
     for i, value in ipairs(packRegistry.packList) do
@@ -650,6 +700,9 @@ function TestMain:testFailedInitDoesNotRegisterPack()
         end,
         createHud = function()
             return {
+                install = function()
+                    hudInstallCalls = hudInstallCalls + 1
+                end,
                 setModMarker = function() end,
                 setMarkerVisible = function() end,
             }
@@ -683,6 +736,7 @@ function TestMain:testFailedInitDoesNotRegisterPack()
 
     lu.assertEquals(packIdCount, 0)
     lu.assertEquals(packRegistry.packs[packId], previousPack)
+    lu.assertEquals(hudInstallCalls, 0)
 end
 
 function TestMain:testTryInitReturnsPackOnSuccess()
@@ -725,6 +779,7 @@ function TestMain:testTryInitReturnsPackOnSuccess()
         end,
         createHud = function()
             return {
+                install = function() end,
                 setModMarker = function() end,
                 setMarkerVisible = function() end,
             }
@@ -796,6 +851,7 @@ function TestMain:testTryInitReturnsErrorAndDoesNotRegisterPack()
         end,
         createHud = function()
             return {
+                install = function() end,
                 setModMarker = function() end,
                 setMarkerVisible = function() end,
             }

@@ -105,6 +105,14 @@ local function createPackOrThrow(packId, windowTitle, config, numProfiles, defau
         _index = packIndex,
     }
 
+    local ok, err = xpcall(function()
+        hud.install()
+    end, debug.traceback)
+    if not ok then
+        disposePack(pack)
+        error(err, 0)
+    end
+
     disposePack(existingPack)
 
     if not existingPack then
