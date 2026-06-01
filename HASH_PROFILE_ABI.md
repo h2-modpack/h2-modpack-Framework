@@ -72,8 +72,8 @@ they contain hash delimiters.
 ## Frozen ABI Surface
 
 Treat the following as frozen after release unless you are doing deliberate compatibility work:
-- `definition.id`
-- `definition.name` for user-facing module identity
+- module `id`
+- module `name` for user-facing module identity
 - persisted storage root `alias`
 - storage `default`
 - storage type `toHash(...)`
@@ -83,25 +83,25 @@ These are the wire format.
 
 ## Why Each One Matters
 
-### `definition.id`
+### Module `id`
 
 Module enable state is encoded under the module id.
 
 Changing:
 
 ```lua
-definition.id = "OldName"
+id = "OldName"
 ```
 
 to:
 
 ```lua
-definition.id = "NewName"
+id = "NewName"
 ```
 
 moves the module into a new hash namespace.
 
-### `definition.name`
+### Module `name`
 
 Lib requires every module to declare a display name. Framework uses it for
 module UI labels when `shortName` is absent and for diagnostics. Changing it does
@@ -168,7 +168,7 @@ Module authors own compatibility plans for:
 ## Shipped-Module Invariants
 
 Once a module is publicly shipped, the following are part of its ABI and should be treated as stable:
-- `definition.id` - identifies the module in hashes and profiles
+- module `id` - identifies the module in hashes and profiles
 - persisted storage root `alias` names - identify values within a module's namespace
 - storage defaults - consumed when a persisted value is absent
 

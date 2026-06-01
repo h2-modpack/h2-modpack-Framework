@@ -57,22 +57,23 @@ local data = import("mods/data.lua")
 local logic = import("mods/logic.lua").bind(data)
 local ui = import("mods/ui.lua").bind(data)
 
-local host, store = lib.createModule({
+local module, err = lib.createModule({
     pluginGuid = PLUGIN_GUID,
     config = config,
     modpack = PACK_ID,
     id = MODULE_ID,
     name = "Example Module",
-    storage = data.buildStorage(),
-    drawTab = ui.drawTab,
-    drawQuickContent = ui.drawQuickContent,
 })
-if not host then
+if not module then
     return
 end
 
-logic.registerHooks(host, store)
-local ok = host.activate()
+module.data.define(data.buildStorage())
+module.ui.tab(ui.drawTab)
+module.ui.quickContent(ui.drawQuickContent)
+logic.registerHooks(module)
+
+local ok = module.activate()
 if not ok then
     return
 end
@@ -82,8 +83,9 @@ Framework behavior:
 - only enabled modules render their quick content
 - Framework snapshots live module hosts at the start of the UI operation
 - module quick content is called through that snapshot host's `drawQuickContent()`
-- the draw callback receives `draw, state, actions`; `draw` contains
-  `imgui`, `widgets`, and `nav`
+- the module-authored quick callback receives `(host, ui)`
+- `ui.draw` contains `imgui`, `widgets`, `nav`, and `control`; `ui.data` owns
+  staged UI state; `ui.actions` owns post-draw intent
 - if the module dirty-stages persisted state during quick content, Framework commits it after draw
 
 ## What Belongs In Quick Setup

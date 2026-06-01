@@ -107,10 +107,11 @@ Each discovered coordinated module must expose:
 `host.drawQuickContent()` is optional.
 
 These are full Lib host methods. The module-authored callbacks registered with
-Lib receive the author surfaces as `drawTab(draw, state, actions)` and
-`drawQuickContent(draw, state, actions)`. The draw object contains `imgui`,
-`widgets`, `nav`, and draw-safe logging; the other arguments provide staged data
-and staged actions.
+Lib receive the author surfaces as `drawTab(host, ui)` and
+`drawQuickContent(host, ui)`. `ui.draw` contains `imgui`, `widgets`, `nav`, and
+`control`; `ui.data` provides staged UI data and read-only runtime-owned data;
+`ui.actions` provides post-draw intent; `ui.controls` and `ui.shared` expose
+control and shared-data surfaces.
 
 Lib owns module definition preparation and lifecycle validation before the host
 is published. Framework trusts Lib-created hosts. Runtime state transitions are

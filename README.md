@@ -24,22 +24,23 @@ local data = import("mods/data.lua")
 local logic = import("mods/logic.lua").bind(data)
 local ui = import("mods/ui.lua").bind(data)
 
-local host, store = lib.createModule({
+local module, err = lib.createModule({
     pluginGuid = PLUGIN_GUID,
     config = config,
     modpack = PACK_ID,
     id = MODULE_ID,
     name = "Example Module",
-    storage = data.buildStorage(),
-    drawTab = ui.drawTab,
-    drawQuickContent = ui.drawQuickContent,
 })
-if not host then
+if not module then
     return
 end
 
-logic.registerHooks(host, store)
-local ok = host.activate()
+module.data.define(data.buildStorage())
+module.ui.tab(ui.drawTab)
+module.ui.quickContent(ui.drawQuickContent)
+logic.registerHooks(module)
+
+local ok = module.activate()
 if not ok then
     return
 end
@@ -77,10 +78,9 @@ Discovered modules render through:
 - optional `host.drawQuickContent()`
 
 The module-authored callbacks registered with Lib receive
-`drawTab(draw, state, actions)` and
-`drawQuickContent(draw, state, actions)`. Framework calls the live
-`ModuleHost` methods; Lib supplies the draw object with `imgui`, `widgets`, and
-`nav`, plus the staged state, action, and draw-safe service surfaces.
+`drawTab(host, ui)` and `drawQuickContent(host, ui)`. Framework calls the live
+`ModuleHost` wrapper methods; Lib supplies the callback host plus `ui.draw`,
+`ui.data`, `ui.actions`, `ui.controls`, and `ui.shared`.
 
 Sidebar behavior:
 
